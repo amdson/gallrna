@@ -1,0 +1,29 @@
+# raw sequencing deliveries (large; live on cluster storage, not in git)
+30-*/
+
+# pipeline outputs (all regenerable via make)
+01_trim/
+02_align/
+03_counts/
+04_matrix/
+qc/
+logs/
+references/combined/
+references/plant_host/*/
+!references/plant_host/AVAILABILITY.md
+references/agrobacterium/
+
+# collaborator data - unpublished genomes & documents; transfer alongside the
+# repo but keep out of git until cleared for publication
+Strain 1416/
+Strain 29/
+C58_ALIGNED/
+docs/
+
+# never commit credentials
+info.txt
+credentials*
+
+# junk
+.DS_Store
+._*
