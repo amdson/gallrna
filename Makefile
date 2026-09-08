@@ -1,0 +1,199 @@
+# ============================================================================
+# Gall dual RNA-seq pipeline (see PIPELINE.md for rationale)
+# Run from this directory. Heavy targets belong on a compute node, e.g.:
+#     srun --cpus-per-task=16 --mem=64G make -j2 align
+# `make help` lists targets. THREADS and STRAND can be overridden: make align THREADS=16
+#
+# ---------------------------- INPUTS ----------------------------------------
+# FILES (must exist locally):
+#   30-1348328766/00_fastq/<sample>_R{1,2}_001.fastq.gz (+ .md5)   raw reads, GeneWiz 30-1348328766
+#   samples.tsv                                    sample metadata (strain/genotype/host/age)
+#   "Strain 1416/1416 * FINAL.gb"                  strain 1416 assembly, annotated (collaborator USB)
+#   "Strain 29/.../Xtra RAST download/357.66*.gbk" strain 29 assembly, RAST-annotated (collaborator USB)
+#   scripts/convert_refs.py, scripts/merge_counts.py
+# LINKS (downloaded automatically by `make host-genomes`, NCBI datasets API):
+#   https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/<ACC>/download
+#     euonymus_japonicus_proxy  GCA_963580455.1  (E. europaeus - congener proxy, no annotation)
+#     citrus_sinensis           GCF_022201045.2  (DVS_A1.0, annotated)
+#     brassica_juncea           GCA_018703725.1  (no annotation)
+#     carica_papaya             GCF_000150535.2  (Papaya1.0, annotated)
+#     poncirus_trifoliata       GCA_018350135.1  (no annotation)
+#     solanum_lycopersicum      GCF_036512215.1  (SLM_r2.1, annotated)
+# TOOLS: cluster modules hisat2/2.2.1 samtools/1.21 subread/2.0.6 fastqc/0.12.1;
+#        conda env `rnaseq` (fastp, multiqc, python+biopython) - see environment.yml
+# ============================================================================
+
+SHELL := /bin/bash
+.SHELLFLAGS := -lc
+.SECONDEXPANSION:
+.SECONDARY:
+.DEFAULT_GOAL := help
+
+THREADS ?= 8
+STRAND  ?= 0            # featureCounts -s: 0 until strandedness confirmed; dUTP kits are usually 2
+CONDA   ?= $(HOME)/.conda/envs/rnaseq/bin
+# module names as found on SCINet Atlas - override for other clusters (e.g. Ceres):
+#   make align MOD_HISAT2=hisat2 MOD_SAMTOOLS=samtools ...
+MOD_HISAT2   ?= hisat2/2.2.1
+MOD_SAMTOOLS ?= samtools/1.21
+MOD_SUBREAD  ?= subread/2.0.6
+MOD_FASTQC   ?= fastqc/0.12.1
+RAW     := 30-1348328766/00_fastq
+SAMPLES := $(shell tail -n +2 samples.tsv | cut -f1)
+
+# --- sample -> host genome (from samples.tsv / gall tissue inventory) -------
+HOST_1416wtEu635   = euonymus_japonicus_proxy
+HOST_29wtEu635     = euonymus_japonicus_proxy
+HOST_29wtGeu182    = euonymus_japonicus_proxy
+HOST_1416wtGeu182  = euonymus_japonicus_proxy
+HOST_29wtHC83      = citrus_sinensis
+HOST_1416wtM26     = brassica_juncea
+HOST_29wtM26       = brassica_juncea
+HOST_29wtP46       = carica_papaya
+HOST_1416wtCC547   = poncirus_trifoliata
+HOST_1416wtCC54    = poncirus_trifoliata
+HOST_1416G-19CC547 = poncirus_trifoliata
+HOST_1416G-30CC547 = poncirus_trifoliata
+HOST_1416wtT49     = solanum_lycopersicum
+HOST_29wtT29       = solanum_lycopersicum
+
+strainof = $(if $(filter 1416%,$1),strain_1416,strain_29)
+comboof  = $(call strainof,$1)__$(HOST_$1)
+
+HOSTS       := euonymus_japonicus_proxy citrus_sinensis brassica_juncea carica_papaya poncirus_trifoliata solanum_lycopersicum
+ANNOT_HOSTS := citrus_sinensis carica_papaya solanum_lycopersicum
+COMBOS      := $(sort $(foreach s,$(SAMPLES),$(call comboof,$s)))
+hostsamples = $(strip $(foreach s,$(SAMPLES),$(if $(filter $(HOST_$s),$1),$s)))
+
+ACC_euonymus_japonicus_proxy := GCA_963580455.1
+ACC_citrus_sinensis          := GCF_022201045.2
+ACC_brassica_juncea          := GCA_018703725.1
+ACC_carica_papaya            := GCF_000150535.2
+ACC_poncirus_trifoliata      := GCA_018350135.1
+ACC_solanum_lycopersicum     := GCF_036512215.1
+
+# ---------------------------- phony targets ---------------------------------
+.PHONY: help all verify qc trim strain-refs host-genomes refs combined align fractions counts matrices
+
+help:
+	@echo "targets: verify qc trim refs (strain-refs host-genomes) combined align fractions counts matrices all"
+
+all: verify qc fractions matrices
+
+verify: logs/md5.ok
+qc: qc/multiqc_report.html
+trim: $(foreach s,$(SAMPLES),01_trim/$(s)_R1.fastq.gz)
+strain-refs: references/agrobacterium/strain_1416/strain_1416.fasta references/agrobacterium/strain_29/strain_29.fasta
+host-genomes: $(foreach h,$(HOSTS),references/plant_host/$(h)/$(h).fasta)
+refs: strain-refs host-genomes
+combined: $(foreach c,$(COMBOS),references/combined/$(c).hisat2.ok)
+align: $(foreach s,$(SAMPLES),02_align/$(s).bam)
+fractions: logs/mapping_fractions.tsv
+counts: $(foreach s,$(SAMPLES),03_counts/$(s).txt)
+matrices: 04_matrix/agro_strain_1416.tsv 04_matrix/agro_strain_29.tsv \
+          $(foreach h,$(ANNOT_HOSTS),04_matrix/plant_$(h).tsv)
+
+# ---------------------------- 0. verify transfer ----------------------------
+logs/md5.ok:
+	mkdir -p logs
+	cd $(RAW) && md5sum -c --quiet *.md5
+	touch $@
+
+# ---------------------------- 1. raw QC -------------------------------------
+qc/multiqc_report.html: $(wildcard $(RAW)/*.fastq.gz)
+	mkdir -p qc/fastqc
+	module load $(MOD_FASTQC) && fastqc -t $(THREADS) -o qc/fastqc $(RAW)/*.fastq.gz
+	$(CONDA)/multiqc -f -o qc qc/fastqc
+
+# ---------------------------- 2. trim ---------------------------------------
+01_trim/%_R1.fastq.gz 01_trim/%_R2.fastq.gz: $(RAW)/%_R1_001.fastq.gz $(RAW)/%_R2_001.fastq.gz
+	mkdir -p 01_trim
+	$(CONDA)/fastp -w $(THREADS) -i $(RAW)/$*_R1_001.fastq.gz -I $(RAW)/$*_R2_001.fastq.gz \
+	  -o 01_trim/$*_R1.fastq.gz -O 01_trim/$*_R2.fastq.gz \
+	  -j 01_trim/$*.fastp.json -h 01_trim/$*.fastp.html 2> 01_trim/$*.fastp.log
+
+# ---------------------------- 3a. strain references -------------------------
+# NOTE: .gb sources contain spaces so make cannot track them as prerequisites;
+# delete the outputs (or touch the .gb files' dir) to force reconversion.
+references/agrobacterium/strain_1416/strain_1416.fasta: scripts/convert_refs.py
+	mkdir -p $(dir $@)
+	$(CONDA)/python scripts/convert_refs.py references/agrobacterium/strain_1416/strain_1416 \
+	  "agro_1416_circ=Strain 1416/1416 Circular Chromosome FINAL.gb" \
+	  "agro_1416_lin=Strain 1416/1416 Linear Chromosome FINAL.gb" \
+	  "agro_1416_pAt1=Strain 1416/1416 pAT1 plasmid FINAL.gb" \
+	  "agro_1416_pAt2=Strain 1416/1416 pAT2 plasmid FINAL.gb" \
+	  "agro_1416_pTi=Strain 1416/1416 Ti plasmid FINAL.gb"
+
+references/agrobacterium/strain_29/strain_29.fasta: scripts/convert_refs.py
+	mkdir -p $(dir $@)
+	$(CONDA)/python scripts/convert_refs.py references/agrobacterium/strain_29/strain_29 \
+	  "agro_29_circ=Strain 29/Agrobacterium Strain 29 Raw data/Xtra RAST download/357.660 CC.gbk" \
+	  "agro_29_lin=Strain 29/Agrobacterium Strain 29 Raw data/Xtra RAST download/357.661 LC.gbk" \
+	  "agro_29_pAt1=Strain 29/Agrobacterium Strain 29 Raw data/Xtra RAST download/357.662 pAT1.gbk" \
+	  "agro_29_pAt2=Strain 29/Agrobacterium Strain 29 Raw data/Xtra RAST download/357.663 pAT2.gbk" \
+	  "agro_29_pTi=Strain 29/Agrobacterium Strain 29 Raw data/Xtra RAST download/357.664 pTi.gbk"
+
+# ---------------------------- 3b. host genomes (NCBI) -----------------------
+references/plant_host/%.fasta:
+	$(eval NAME := $(notdir $*))
+	mkdir -p references/plant_host/$(NAME)
+	curl -sL "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/$(ACC_$(NAME))/download?include_annotation_type=GENOME_FASTA&include_annotation_type=GENOME_GFF" \
+	  -o references/plant_host/$(NAME)/$(NAME).zip
+	unzip -oq references/plant_host/$(NAME)/$(NAME).zip -d references/plant_host/$(NAME)/tmp
+	find references/plant_host/$(NAME)/tmp -name "*.fna" -exec mv {} references/plant_host/$(NAME)/$(NAME).fasta \;
+	-find references/plant_host/$(NAME)/tmp -name "genomic.gff" -exec mv {} references/plant_host/$(NAME)/$(NAME).gff3 \;
+	rm -rf references/plant_host/$(NAME)/tmp references/plant_host/$(NAME)/$(NAME).zip
+
+# ---------------------------- 3c. combined refs + index ---------------------
+# combo name = <strain>__<host>; agro contigs carry the agro_ prefix, plant
+# contigs keep their NCBI accessions (organism split downstream keys on agro_).
+references/combined/%.fasta: references/agrobacterium/$$(word 1,$$(subst __, ,$$*))/$$(word 1,$$(subst __, ,$$*)).fasta \
+                             references/plant_host/$$(word 2,$$(subst __, ,$$*))/$$(word 2,$$(subst __, ,$$*)).fasta
+	mkdir -p references/combined
+	cat $^ > $@
+	cat references/agrobacterium/$(word 1,$(subst __, ,$*))/$(word 1,$(subst __, ,$*)).gff3 > references/combined/$*.gff3
+	@hostgff=references/plant_host/$(word 2,$(subst __, ,$*))/$(word 2,$(subst __, ,$*)).gff3; \
+	  if [ -f "$$hostgff" ]; then grep -v "^#" "$$hostgff" >> references/combined/$*.gff3; \
+	  else echo "NOTE: no host annotation for $* - combined GFF is agro-only"; fi
+
+references/combined/%.hisat2.ok: references/combined/%.fasta
+	module load $(MOD_HISAT2) && hisat2-build -p $(THREADS) $< references/combined/$* > references/combined/$*.build.log 2>&1
+	touch $@
+
+# ---------------------------- 4. align (competitive) ------------------------
+02_align/%.bam: 01_trim/%_R1.fastq.gz 01_trim/%_R2.fastq.gz references/combined/$$(call comboof,$$*).hisat2.ok
+	mkdir -p 02_align
+	module load $(MOD_HISAT2) $(MOD_SAMTOOLS) && \
+	hisat2 -p $(THREADS) --dta -x references/combined/$(call comboof,$*) \
+	  -1 01_trim/$*_R1.fastq.gz -2 01_trim/$*_R2.fastq.gz 2> 02_align/$*.hisat2.log \
+	  | samtools sort -@ $(THREADS) -o $@ - && samtools index $@
+
+02_align/%.idxstats: 02_align/%.bam
+	module load $(MOD_SAMTOOLS) && samtools idxstats $< > $@
+
+logs/mapping_fractions.tsv: $(foreach s,$(SAMPLES),02_align/$(s).idxstats)
+	mkdir -p logs
+	@echo -e "sample\tagro_reads\tplant_reads\tagro_frac" > $@
+	@for s in $(SAMPLES); do \
+	  awk -v s=$$s '{if ($$1 ~ /^agro_/) a += $$3; else if ($$1 != "*") p += $$3} \
+	    END {printf "%s\t%d\t%d\t%.4f\n", s, a, p, a/(a+p+1e-9)}' 02_align/$$s.idxstats; \
+	done >> $@
+	@cat $@
+
+# ---------------------------- 5. count --------------------------------------
+03_counts/%.txt: 02_align/%.bam
+	mkdir -p 03_counts
+	module load $(MOD_SUBREAD) && \
+	featureCounts -p --countReadPairs -T $(THREADS) -s $(STRAND) -t gene -g ID \
+	  -a references/combined/$(call comboof,$*).gff3 -o $@ $< 2> 03_counts/$*.log
+
+04_matrix/agro_%.tsv: $$(foreach s,$$(SAMPLES),$$(if $$(filter $$(call strainof,$$s),$$*),03_counts/$$s.txt))
+	mkdir -p 04_matrix
+	$(CONDA)/python scripts/merge_counts.py $@ keep agro_ $^
+
+04_matrix/plant_%.tsv: $$(foreach s,$$(call hostsamples,$$*),03_counts/$$s.txt)
+	mkdir -p 04_matrix
+	$(CONDA)/python scripts/merge_counts.py $@ drop agro_ $^
+
+# 6. differential expression: not automated yet - needs strandedness + design
+# decisions (see PIPELINE.md step 6). Matrices in 04_matrix/ are DESeq2-ready.

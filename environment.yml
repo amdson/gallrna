@@ -1,0 +1,35 @@
+# Gall dual RNA-seq toolchain — recreate with:
+#   conda env create -f environment.yml        (or: mamba env create -f environment.yml)
+#   conda activate rnaseq
+# Versions match what was validated on SCINet Atlas (modules + conda env), 2026-09.
+name: rnaseq
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  # QC
+  - fastqc=0.12.1
+  - multiqc=1.35
+  - fastp=1.3.6
+  # alignment / mapping
+  - hisat2=2.2.1
+  - star=2.7.11b
+  - bowtie2=2.5.4
+  # BAM / sequence wrangling
+  - samtools=1.21
+  - seqkit=2.10.0
+  - bedtools
+  # quantification
+  - subread=2.0.6        # featureCounts
+  - stringtie=3.0.0
+  - salmon=1.10.3
+  # promoter / motif discovery
+  - meme                 # MEME suite (STREME, FIMO)
+  # differential expression (R comes with these)
+  - bioconductor-deseq2=1.50.2
+  - bioconductor-tximport=1.38.2
+  - bioconductor-edger=4.8.2
+  - r-pheatmap
+  - r-ggplot2
+  # transfer convenience
+  - lftp

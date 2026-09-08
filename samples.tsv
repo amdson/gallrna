@@ -1,0 +1,15 @@
+sample	strain	genotype	host_code	host_common	host_species	gall_age_days	gall_mass_g	shipped_g	source_lab	inoculated	collected
+1416wtEu635	1416	wt	Eu	Euonymus	Euonymus japonicus	635	25.0	0.3	Shatters	2024-08-22	2026-05-19
+29wtEu635	29	wt	Eu	Euonymus	Euonymus japonicus	635	24.3	0.6	Shatters	NA	2026-05-19
+29wtGeu182	29	wt	Geu	Euonymus (golden)	Euonymus japonicus	182	4.0	0.5	Shatters	NA	2026-05-05
+1416wtGeu182	1416	wt	Geu	Euonymus (golden)	Euonymus japonicus	182	9.8	0.6	Shatters	NA	2026-05-05
+29wtHC83	29	wt	HC	Hamlin citrus	Citrus sinensis	83	0.9	0.5	Shatters	2026-03-19	2026-06-10
+1416wtM26	1416	wt	M	Mustard	Brassica juncea	26	4.8	0.5	Shatters	2026-04-16	2026-05-12
+29wtM26	29	wt	M	Mustard	Brassica juncea	26	11.3	0.5	Shatters	2026-04-16	2026-05-12
+29wtP46	29	wt	P	Papaya	Carica papaya	46	2.5	0.6	Shatters	2026-04-24	2026-06-09
+1416wtCC547	1416	wt	CC	Citrus (trifoliate)	Poncirus trifoliata	547	1	0.2	Thomson	NA	NA
+1416wtCC54	1416	wt	CC	Citrus (trifoliate)	Poncirus trifoliata	54	1	0.2	Thomson	NA	NA
+1416G-19CC547	1416	G-19	CC	Citrus (trifoliate)	Poncirus trifoliata	547	1	0.2	Thomson	NA	NA
+1416G-30CC547	1416	G-30	CC	Citrus (trifoliate)	Poncirus trifoliata	547	1	0.2	Thomson	NA	NA
+1416wtT49	1416	wt	T	Tomato	Solanum lycopersicum	49	1	0.3	Thomson	NA	NA
+29wtT29	29	wt	T	Tomato	Solanum lycopersicum	29	1	0.3	Thomson	NA	NA
