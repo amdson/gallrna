@@ -273,10 +273,15 @@ field) so sra-tools isn't needed. Carrizo baselines -> `carrizo`; sweet orange -
 host reference: gall + baseline columns, with a `batch`/`study` column in the sample sheet.
 
 **C. Annotation layer (once per genome).**
-eggNOG-mapper and DIAMOND->TAIR10 on RefSeq and ZK8 proteins. The Cs<->Pt pair table (MCscan
-anchors + RBH) doubles as the Carrizo parental-copy map. orange1.1->LOC map to bring in the
-PlantRegMap/PlantTFDB files. Output: one gene table per genome (ID, description, GO, KEGG,
-Arabidopsis hit, TF family, partner in the other parent).
+`make annotate` (Makefile step 7; run it as `sbatch scripts/annotate.slurm`) does the
+functional part for RefSeq-annotated hosts. It keeps the longest protein per gene, runs
+eggNOG-mapper (GO, KEGG, EC, Pfam, description) plus a DIAMOND best hit each way against the
+Arabidopsis proteome (Ensembl Plants release 63), and writes
+`references/plant_host/<host>/<host>.genes.tsv`: one row per counted gene, keyed on the same
+gene IDs as `04_matrix/plant_<host>.tsv`, with a reciprocal-best-hit flag on the Arabidopsis
+match. ZK8 needs a protein FASTA first (from its GFF). Still to add: the Cs<->Pt pair table
+(MCscan anchors + RBH), which doubles as the Carrizo parental-copy map, and the orange1.1->LOC
+map for the PlantRegMap/PlantTFDB files (TF family, TFBS).
 
 **D. Gene-level analyses.**
 1. *Gall vs baselines*, per host genotype: Carrizo galls vs Carrizo baselines, Hamlin vs sweet
@@ -344,8 +349,9 @@ Arabidopsis hit, TF family, partner in the other parent).
    pairs (9 Carrizo stem/leaf, 6 *Poncirus* stem/thorn, 9 sweet orange bark/root/leaf,
    9 sweet orange callus). Tier 2: 9 Carrizo leaf controls, ~0.21 billion. All run accessions
    were matched to their sample labels on NCBI/ENA on 2026-09-14.
-3. Annotation layer (§4 C): needs eggNOG-mapper + DIAMOND (and Salmon if chosen for §4 A) in the
-   conda env or as modules.
+3. Annotation layer (§4 C): sweet orange via `sbatch scripts/annotate.slurm` (eggNOG-mapper in
+   a venv from `scripts/emapper-env.sh`, DIAMOND from the cluster module). Next: ZK8 proteins,
+   the Cs<->Pt pair table, and Salmon if it's chosen for §4 A.
 4. DE notebook `notebooks/03_citrus_host_de.ipynb` for §4 D. R/DESeq2 isn't installed yet
    (PIPELINE.md step 6).
 

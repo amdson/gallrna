@@ -20,8 +20,13 @@
 #     carica_papaya             GCF_000150535.2  (Papaya1.0, annotated)
 #     poncirus_trifoliata       GCA_018350135.1  (no annotation)
 #     solanum_lycopersicum      GCF_036512215.1  (SLM_r2.1, annotated)
-# TOOLS: cluster modules hisat2/2.2.1 samtools/1.21 subread/2.0.6 fastqc/0.12.1;
-#        conda env `rnaseq` (fastp, multiqc, python+biopython) - see environment.yml
+#   (downloaded by `make annotate`, step 7)
+#   same NCBI API, include_annotation_type=PROT_FASTA   host RefSeq proteins
+#   https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-63/.../Arabidopsis_thaliana.TAIR10.pep.all.fa.gz
+#   http://eggnog5.embl.de/download/emapperdb-5.0.2/    eggNOG-mapper database (~50 GB)
+# TOOLS: cluster modules hisat2/2.2.1 samtools/1.21 subread/2.0.6 fastqc/0.12.1 diamond;
+#        conda env `rnaseq` (fastp, multiqc, python+biopython) - see environment.yml;
+#        venv ~/.venvs/emapper (eggNOG-mapper) - see scripts/emapper-env.sh
 # ============================================================================
 
 SHELL := /bin/bash
@@ -39,6 +44,7 @@ MOD_HISAT2   ?= hisat2/2.2.1
 MOD_SAMTOOLS ?= samtools/1.21
 MOD_SUBREAD  ?= subread/2.0.6
 MOD_FASTQC   ?= fastqc/0.12.1
+MOD_DIAMOND  ?= diamond
 # per-cluster overrides (gitignored), e.g. local.mk on Ceres sets MOD_SAMTOOLS/MOD_SUBREAD
 -include local.mk
 RAW     := 30-1348328766/00_fastq
@@ -100,10 +106,10 @@ ACC_poncirus_trifoliata      := GCA_018350135.1
 ACC_solanum_lycopersicum     := GCF_036512215.1
 
 # ---------------------------- phony targets ---------------------------------
-.PHONY: help all verify qc trim strain-refs host-genomes refs combined align fractions counts matrices
+.PHONY: help all verify qc trim strain-refs host-genomes refs combined align fractions counts matrices annotate
 
 help:
-	@echo "targets: verify qc trim refs (strain-refs host-genomes) combined align fractions counts matrices all"
+	@echo "targets: verify qc trim refs (strain-refs host-genomes) combined align fractions counts matrices all annotate"
 
 all: verify qc fractions matrices
 
@@ -224,3 +230,72 @@ logs/mapping_fractions.tsv: $(foreach s,$(SAMPLES),02_align/$(s).idxstats)
 
 # 6. differential expression: not automated yet - needs strandedness + design
 # decisions (see PIPELINE.md step 6). Matrices in 04_matrix/ are DESeq2-ready.
+
+# ---------------------------- 7. functional annotation ----------------------
+# One protein per gene (longest RefSeq isoform, named by the gene ID featureCounts
+# writes) -> eggNOG-mapper (GO, KEGG, EC, Pfam, description) + DIAMOND best hit in
+# Arabidopsis (AGI + symbol; the crown-gall marker lists in CITRUS_HOST_PLAN.md are
+# AGIs). Output: references/plant_host/<host>/<host>.genes.tsv, one row per counted
+# gene, so it joins straight onto 04_matrix/plant_<host>.tsv.
+# Needs scripts/emapper-env.sh once. The eggNOG database (~50 GB) downloads on first
+# run into EGGNOG_DATA - on Ceres keep it off home (30 GB quota): make
+# references/plant_host/eggnog_data a symlink into 90daydata like the host dirs, or
+# set EGGNOG_DATA in local.mk. Works for any RefSeq-annotated host, e.g.
+#   make annotate ANNOTATE="citrus_sinensis carica_papaya" THREADS=16
+ANNOTATE    ?= citrus_sinensis
+EGGNOG_DATA ?= references/plant_host/eggnog_data
+EMAPPER     ?= $(HOME)/.venvs/emapper/bin
+ATH         := references/plant_host/arabidopsis_thaliana/arabidopsis_thaliana
+ATH_PEP     := https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-63/fasta/arabidopsis_thaliana/pep/Arabidopsis_thaliana.TAIR10.pep.all.fa.gz
+DIAMOND_BEST = diamond blastp --more-sensitive -k 1 -e 1e-5 --threads $(THREADS) --quiet \
+               --outfmt 6 qseqid sseqid pident length qlen slen evalue bitscore
+
+annotate: $(foreach h,$(ANNOTATE),references/plant_host/$(h)/$(h).genes.tsv)
+
+# Fetched directly rather than with emapper's download_eggnog_data.py: that script
+# points at eggnogdb.embl.de, which no longer resolves (2026-09-14), and it reports
+# "Finished" after wget fails. Same files, from the host that still serves them.
+EGGNOG_URL := http://eggnog5.embl.de/download/emapperdb-5.0.2
+$(EGGNOG_DATA)/eggnog.db:
+	mkdir -p $(EGGNOG_DATA)
+	cd $(EGGNOG_DATA) && for f in eggnog_proteins.dmnd.gz eggnog.taxa.tar.gz eggnog.db.gz; do \
+	  curl -fsSL --retry 3 -o $$f.part $(EGGNOG_URL)/$$f && mv $$f.part $$f || exit 1; done
+	cd $(EGGNOG_DATA) && gunzip -f eggnog_proteins.dmnd.gz && tar -xzf eggnog.taxa.tar.gz && rm eggnog.taxa.tar.gz
+	cd $(EGGNOG_DATA) && gunzip -f eggnog.db.gz
+	test -s $(EGGNOG_DATA)/eggnog_proteins.dmnd && test -s $@
+
+references/plant_host/%.protein.faa: references/plant_host/%.fasta
+	curl -sL "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/$(ACC_$(notdir $*))/download?include_annotation_type=PROT_FASTA" \
+	  -o $(@D)/prot.zip
+	unzip -oq $(@D)/prot.zip -d $(@D)/prot_tmp
+	find $(@D)/prot_tmp -name "protein.faa" -exec mv {} $@ \;
+	rm -rf $(@D)/prot_tmp $(@D)/prot.zip
+	test -s $@ && touch $@    # unzip keeps NCBI's timestamp, which can sit in the future
+
+references/plant_host/%.longest.faa: references/plant_host/%.protein.faa scripts/longest_proteins.py
+	python3 scripts/longest_proteins.py refseq references/plant_host/$*.gff3 $< $@
+
+$(ATH).longest.faa: scripts/longest_proteins.py
+	mkdir -p $(@D)
+	curl -sL $(ATH_PEP) -o $(ATH).pep.all.fa.gz
+	python3 scripts/longest_proteins.py ensembl $(ATH).pep.all.fa.gz $@ $(ATH).agi.tsv
+
+%.dmnd: %.longest.faa
+	module load $(MOD_DIAMOND) && diamond makedb --in $< -d $* --threads $(THREADS) --quiet
+
+# best hit each way; the reverse search marks reciprocal best hits (ath_rbh)
+references/plant_host/%.ath.tsv: references/plant_host/%.longest.faa $(ATH).dmnd
+	module load $(MOD_DIAMOND) && $(DIAMOND_BEST) -q $< -d $(ATH).dmnd -o $@
+
+references/plant_host/%.ath_rev.tsv: $(ATH).longest.faa references/plant_host/%.dmnd
+	module load $(MOD_DIAMOND) && $(DIAMOND_BEST) -q $< -d references/plant_host/$*.dmnd -o $@
+
+references/plant_host/%.emapper.annotations: references/plant_host/%.longest.faa $(EGGNOG_DATA)/eggnog.db
+	module load $(MOD_DIAMOND) && $(EMAPPER)/emapper.py -i $< --itype proteins -m diamond \
+	  --tax_scope Viridiplantae --data_dir $(EGGNOG_DATA) --cpu $(THREADS) --override \
+	  -o $(notdir $*) --output_dir $(@D) --temp_dir $(@D) > $(@D)/$(notdir $*).emapper.log 2>&1
+
+references/plant_host/%.genes.tsv: references/plant_host/%.emapper.annotations \
+                                   references/plant_host/%.ath.tsv references/plant_host/%.ath_rev.tsv \
+                                   scripts/gene_annotation.py
+	python3 scripts/gene_annotation.py references/plant_host/$*.gff3 $(wordlist 1,3,$^) $(ATH).agi.tsv $@
