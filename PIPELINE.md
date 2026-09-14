@@ -84,6 +84,51 @@ Agrobacterium reads. Libraries are **polyA mRNA** (~1% intronic reads) and **uns
   and `04_matrix/plant_<host>.tsv` (annotated hosts only)
 - Flag T-DNA genes (multimap between pTi and transformed plant genome)
 
+### 5b. Mapping statistics for the paper (`make mapstats`)
+**Why.** Every host is aligned to a single-copy (haploid) reference assembly, but the plants are
+heterozygous diploids (sweet orange), an F1 hybrid (Carrizo), an allotetraploid (*B. juncea*) or
+a different species from the reference (*Euonymus* on the *E. europaeus* proxy). Reads from a
+gene copy that differs from the reference carry extra mismatches. Past HISAT2's default limit
+(minimum score `L,0,-0.2`, about 5 high-quality mismatches per 150 bp read) they fail to align.
+This is reference bias (Stevenson et al. 2013; SOURCES.md §6). Gene-level counts compared within
+one host genotype carry the same bias in every sample, so it cancels and is normally not
+corrected. This target records, per sample, the numbers that show the bias stayed small, as a
+supplementary table for the paper. Nothing downstream reads it.
+
+**Run.** `make mapstats` -> `logs/mapping_stats.tsv`, one row per sample (rows cached as
+`02_align/<sample>.mapstats.tsv`; `scripts/mapstats.py`). Run it on a compute node:
+`samtools stats` reads every host alignment.
+
+| columns | from | what it shows |
+|---|---|---|
+| `raw_pairs`, `trimmed_pairs`, `pct_pairs_kept` | fastp JSON | read retention after trimming |
+| `pct_overall_alignment`, `pct_concordant_unique`, `pct_concordant_multi` | HISAT2 log | divergence from the reference shows as lower overall alignment; repeats or homeologs as more multi-mapping |
+| `host_reads`, `agro_reads`, `pct_reads_host`, `pct_reads_agro`, `agro_reads_per_million` | `samtools`, primary alignments | reads per organism as a share of all reads sequenced, each read counted once |
+| `host_mismatch_rate` | `samtools stats` "error rate" on host contigs | mismatches per aligned base: the direct measure of divergence from the reference (includes sequencing error; inbred tomato is the floor) |
+| `pct_pairs_assigned`, `pct_pairs_multimapping`, `pct_pairs_nofeature`, `pct_pairs_ambiguous` | featureCounts summary | fate of read pairs at counting, both organisms together (hosts without gene models count bacterial genes only, so their assigned share is near 0) |
+| `host_pairs_assigned`, `agro_pairs_assigned`, `host_genes_ge10`, `agro_genes_ge10` | featureCounts table, split on `agro_` | counted pairs and genes detected per organism; host columns are NA without gene models (*Euonymus*, *B. juncea*) |
+
+**How to read it** (first run, 2026-09-14):
+- `host_mismatch_rate` rises with distance from the reference, as expected: tomato 0.29-0.31%,
+  papaya 0.33%, *B. juncea* 0.51-0.52%, Hamlin 0.56%, Carrizo 0.88-1.02%, *Euonymus* proxy
+  1.87-2.06%.
+- Tomato (96%), Hamlin (92%), *B. juncea* (88-89%) and papaya (88%) align well, with few
+  multi-mapped pairs. No correction needed. *B. juncea*'s assembly keeps its A and B subgenomes
+  as separate chromosomes, and reads still place uniquely.
+- Carrizo (82-85%) loses reads from its *Poncirus* gene copies. That's fine for CC-vs-CC
+  contrasts. State it for comparisons against other hosts, or use the two-parent `carrizo`
+  reference (step 3).
+- The *Euonymus* samples (31-36%) are limited by the species difference, not ploidy: most
+  aligned reads sit near the mismatch limit. Report it as a limitation of the proxy, and compare
+  their bacterial load with other hosts only per total reads (`pct_reads_agro`).
+- **Cross-mapping bound.** G-19/G-30 galls barely express the wt bacterial T-DNA genes, so their
+  `agro_reads_per_million` (2.7 and 9.8, against 638-1,426 in the wt citrus galls) is an upper
+  bound on plant reads wrongly assigned to the bacterium, for citrus. That's worth a sentence in
+  the methods.
+- `logs/mapping_fractions.tsv` (step 4) counts every alignment record, secondary alignments
+  included, and divides by mapped reads only, so unmapped plant reads inflate its bacterial share
+  (about 2x for *Euonymus*). Use `mapping_stats.tsv` for anything reported.
+
 ### 6. Differential expression
 - Data: split count matrices + sample metadata (strain, genotype, host)
 - Tools: R in conda env `rnaseq`: DESeq2, tximport, edgeR, pheatmap, ggplot2 (not installed yet)

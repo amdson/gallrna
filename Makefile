@@ -106,10 +106,10 @@ ACC_poncirus_trifoliata      := GCA_018350135.1
 ACC_solanum_lycopersicum     := GCF_036512215.1
 
 # ---------------------------- phony targets ---------------------------------
-.PHONY: help all verify qc trim strain-refs host-genomes refs combined align fractions counts matrices annotate
+.PHONY: help all verify qc trim strain-refs host-genomes refs combined align fractions counts matrices mapstats annotate
 
 help:
-	@echo "targets: verify qc trim refs (strain-refs host-genomes) combined align fractions counts matrices all annotate"
+	@echo "targets: verify qc trim refs (strain-refs host-genomes) combined align fractions counts matrices mapstats all annotate"
 
 all: verify qc fractions matrices
 
@@ -125,6 +125,7 @@ fractions: logs/mapping_fractions.tsv
 counts: $(foreach s,$(SAMPLES),03_counts/$(s).txt)
 matrices: 04_matrix/agro_strain_1416.tsv 04_matrix/agro_strain_29.tsv \
           $(foreach h,$(ANNOT_HOSTS),04_matrix/plant_$(h).tsv)
+mapstats: logs/mapping_stats.tsv
 
 # ---------------------------- 0. verify transfer ----------------------------
 logs/md5.ok:
@@ -227,6 +228,25 @@ logs/mapping_fractions.tsv: $(foreach s,$(SAMPLES),02_align/$(s).idxstats)
 04_matrix/plant_%.tsv: $$(foreach s,$$(call hostsamples,$$*),03_counts/$$s.txt)
 	mkdir -p 04_matrix
 	$(CONDA)/python scripts/merge_counts.py $@ drop agro_ $^
+
+# ---------------------------- 5b. mapping statistics ------------------------
+# Per-sample mapping QC for the paper's supplementary table: read retention, alignment
+# (unique/multi), host vs bacterial reads (primary alignments, as a share of all reads
+# sequenced), host mismatch rate and featureCounts assignment. It records that the
+# single-copy host references gave reasonable results even though the hosts are
+# heterozygous, hybrid or polyploid, and it bounds plant->bacterium cross-mapping.
+# Column guide and how to read it: PIPELINE.md step 5b. samtools stats reads every host
+# alignment, so run it on a compute node, e.g.
+#   srun --cpus-per-task=16 --mem=16G make -j4 mapstats THREADS=4
+02_align/%.mapstats.tsv: 02_align/%.bam 03_counts/%.txt scripts/mapstats.py
+	module load $(MOD_SAMTOOLS) && python3 scripts/mapstats.py $* $(call comboof,$*) $< \
+	  02_align/$*.hisat2.log 01_trim/$*.fastp.json 03_counts/$*.txt $(THREADS) > $@.tmp
+	mv $@.tmp $@
+
+logs/mapping_stats.tsv: $(foreach s,$(SAMPLES),02_align/$(s).mapstats.tsv)
+	mkdir -p logs
+	awk 'FNR > 1 || NR == 1' $^ > $@
+	@echo "$@: $$(($$(wc -l < $@) - 1)) samples"
 
 # 6. differential expression: not automated yet - needs strandedness + design
 # decisions (see PIPELINE.md step 6). Matrices in 04_matrix/ are DESeq2-ready.

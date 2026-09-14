@@ -272,6 +272,35 @@ samtools and subread. Conda versions come from `environment.yml`.
   requires longer anchors for novel splice sites (HISAT2 manual). Spliced alignment stays on
   for the bacterial contigs; `scripts/splice_rates.sh` → `logs/splice_rates.tsv` measures
   what that costs.
+- **Single-copy host references, no allele-aware mapping.** Reads from gene copies that differ
+  from the reference align less often (reference bias). The bias grows with divergence, and
+  allowing more mismatches reduces it: Stevenson KR, Coolon JD, Wittkopp PJ (2013) Sources of
+  bias in measures of allele-specific expression derived from RNA-seq data aligned to a single
+  reference genome. *BMC Genomics* 14:536.
+  [doi:10.1186/1471-2164-14-536](https://doi.org/10.1186/1471-2164-14-536); Degner JF, Marioni
+  JC, Pai AA, et al. (2009) Effect of read-mapping biases on detecting allele-specific expression
+  from RNA-sequencing data. *Bioinformatics* 25:3207-3212.
+  [doi:10.1093/bioinformatics/btp579](https://doi.org/10.1093/bioinformatics/btp579).
+  Gene-level counts compared within one host genotype share the bias, so it is not corrected.
+  `make mapstats` records its size per sample (PIPELINE.md step 5b). The remedies below are for
+  questions about which gene copy is expressed, and aren't used yet:
+  - variant-aware index: `hisat2-build --snp` (Kim et al. 2019);
+  - remap-and-filter: van de Geijn B, McVicker G, Gilad Y, Pritchard JK (2015) WASP.
+    *Nat Methods* 12:1061-1063. [doi:10.1038/nmeth.3582](https://doi.org/10.1038/nmeth.3582);
+    Castel SE, Levy-Moonshine A, Mohammadi P, et al. (2015) *Genome Biol* 16:195.
+    [doi:10.1186/s13059-015-0762-6](https://doi.org/10.1186/s13059-015-0762-6);
+  - references holding both gene copies: the DVS phased assembly (Wu et al., §5); the planned
+    two-parent Carrizo reference; Rozowsky J, Abyzov A, Wang J, et al. (2011) AlleleSeq.
+    *Mol Syst Biol* 7:522. [doi:10.1038/msb.2011.54](https://doi.org/10.1038/msb.2011.54);
+    Kaminow B, Ballouz S, Gillis J, Dobin A (2022) *Genome Res* 32:738-749.
+    [doi:10.1101/gr.275613.121](https://doi.org/10.1101/gr.275613.121);
+  - assigning reads to subgenomes in polyploids (*B. juncea*): Akama S, Shimizu-Inatsugi R,
+    Shimizu KK, Sese J (2014) HomeoRoq. *Nucleic Acids Res* 42:e46.
+    [doi:10.1093/nar/gkt1376](https://doi.org/10.1093/nar/gkt1376); Page JT, Gingle AR,
+    Udall JA (2013) PolyCat. *G3* 3:517-525.
+    [doi:10.1534/g3.112.005298](https://doi.org/10.1534/g3.112.005298); Kuo T, Hatakeyama M,
+    Tameshige T, et al. Homeolog expression quantification methods for allopolyploids.
+    *Brief Bioinform* 21:395-407. [doi:10.1093/bib/bby121](https://doi.org/10.1093/bib/bby121).
 - **featureCounts `-p --countReadPairs -s 0 -t gene -g ID`:** counts fragments rather than reads,
   unstranded (§3), at gene level. Multi-mapping reads are not counted (the featureCounts
   default); PIPELINE.md step 5 flags that T-DNA genes can be affected.
@@ -291,6 +320,7 @@ samtools and subread. Conda versions come from `environment.yml`.
 | `scripts/merge_counts.py` | merges per-sample featureCounts tables, keeping or dropping `agro_` rows | `04_matrix/*.tsv` |
 | `scripts/intron_fraction.sh` | re-counts BAMs with `-t exon` vs `-t gene`; intronic = difference in NoFeatures (polyA test, §3) | `logs/intron_fraction.tsv` |
 | `scripts/splice_rates.sh` | share of alignments with `N` in the CIGAR, per organism (`samtools view`, `idxstats`) | `logs/splice_rates.tsv` |
+| `scripts/mapstats.py` (`make mapstats`) | per-sample mapping QC for the paper: fastp retention, HISAT2 rates, primary reads per organism over all reads, host mismatch rate (`samtools stats`), featureCounts assignment | `logs/mapping_stats.tsv` |
 
 ## 8. Notebooks and figures
 
