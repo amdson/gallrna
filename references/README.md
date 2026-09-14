@@ -18,15 +18,43 @@ circ chr 2,837,203 | lin chr 2,043,404 | pAt1 589,644 | pAt2 188,391 | pTi 177,7
 NOTE: strains 1416 and 29 are near-identical in replicon sizes — close relatives;
 biggest difference is pTi (196.7 vs 177.7 kb).
 NOTE: 1416 annotation (SnapGene FINAL) and 29 annotation (RAST) come from different
-pipelines — harmonize via orthology (pipeline step 7) before cross-strain gene comparisons.
+pipelines — harmonize via orthology (pipeline step 8) before cross-strain gene comparisons.
 
 ## agrobacterium/C58/  — published reference (comparison/orthology only, no samples map to it)
 Source: `C58_ALIGNED/*.dna` (SnapGene, = AE007869 / AE007870.2 / AE007872.2 / NC_003065).
 4 replicons, 5.67 Mb; Atu locus tags. `genes/`: single-gene refs (6b protein, recA).
 
-## plant_host/  — EMPTY, still needed
-Host accessions (CC54, CC547, Eu635, Geu182, HC83, M26, P46, T29, T49): species unknown,
-ask collaborator. Required before alignment (see confounding notes, pipeline step 3-4).
+## plant_host/<host>/  — host genomes (NCBI datasets API, `make host-genomes`)
+Each dir holds `<host>.fasta`, plus `<host>.gff3` when NCBI has gene models. On Ceres each dir
+is a symlink into `/90daydata/small_grains/andrew.dickson/gallrna_data/references/plant_host/`.
+Host per sample: `../samples.tsv`; availability notes: `plant_host/AVAILABILITY.md`.
+
+| dir | assembly | gene models | samples mapped to it |
+|---|---|---|---|
+| citrus_sinensis | GCF_022201045.2 DVS_A1.0 (RefSeq release 103) | yes | 29wtHC83; the 4 Carrizo (CC) galls for now |
+| poncirus_trifoliata | GCA_018350135.1 ZK8 | not on NCBI (at CGD, see CITRUS_HOST_PLAN.md §3.1) | none |
+| carica_papaya | GCF_000150535.2 Papaya1.0 | yes | 29wtP46 |
+| solanum_lycopersicum | GCF_036512215.1 SLM_r2.1 | yes | 1416wtT49, 29wtT29 |
+| brassica_juncea | GCA_018703725.1 | no | 1416wtM26, 29wtM26 |
+| euonymus_japonicus_proxy | GCA_963580455.1 (*E. europaeus*) | no | the 4 Euonymus (Eu, Geu) samples |
+
+`make annotate` (Makefile step 7) adds, per annotated host:
+`<host>.protein.faa` (RefSeq proteins), `<host>.longest.faa` (longest per gene, named by gene
+ID), `<host>.emapper.*` (eggNOG-mapper), `<host>.dmnd`, `<host>.ath.tsv` / `.ath_rev.tsv`
+(DIAMOND best hits vs Arabidopsis, each way) and the joined `<host>.genes.tsv`.
+
+## plant_host/arabidopsis_thaliana/  — annotation helper, not a sample host
+Ensembl Plants release 63 TAIR10 proteome: longest isoform per gene (`.longest.faa`, `.dmnd`)
+and `arabidopsis_thaliana.agi.tsv` (AGI, symbol, description). Built by `make annotate`.
+
+## eggNOG-mapper database  — `EGGNOG_DATA` (Makefile default `plant_host/eggnog_data`)
+emapperdb 5.0.2 from eggnog5.embl.de, ~50 GB unpacked (eggnog.db, eggnog_proteins.dmnd,
+taxonomy). On Ceres it lives at `/90daydata/small_grains/andrew.dickson/gallrna_data/references/eggnog_data`;
+pass `EGGNOG_DATA` or set it in `local.mk`.
+
+## combined/  — `make combined`
+`<strain>__<host>.fasta` / `.gff3` (strain + host concatenated) and the HISAT2 index, one per
+strain x host pair actually sampled. Symlink into 90daydata on Ceres.
 
 ## Also still missing
 - G-19 / G-30 event/construct sequences (not in upload)

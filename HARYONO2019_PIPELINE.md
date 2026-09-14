@@ -47,13 +47,13 @@ not gall tissue — no host genome, no dual RNA-seq machinery anywhere in their 
 - Per-replicon conservation gradient: circular chr (94.6% AA sim, 76% genes shared)
   > linear chr (92.0%, 59%) > pTi (71.7%, 31%) > pAt plasmids (3% genes shared)
 
-### Cross-strain DE comparison (their Table 2 — template for our step 7)
+### Cross-strain DE comparison (their Table 2 — template for our step 8)
 - Each DE gene classified by homolog's status in the other strain:
   up/up (23), up/not-significant, up/absent, down/down (20), etc.
 - <50% of DE genes had a homolog with the same expression pattern
   → regulatory divergence, not just gene content, explains phenotype differences
 
-### Promoter analysis (template for our step 8)
+### Promoter analysis (template for our step 9)
 - Input: 600 bp upstream of DE genes, 4 groups (up/down x strain)
 - MEME ab initio: "-dna -nmotifs 5", -maxw swept 50 → 15
 - Targeted scan: VirG-binding consensus RTTDCAWWTGHAAY, <=3 mismatches allowed
