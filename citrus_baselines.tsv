@@ -23,3 +23,21 @@ SRR16874244	PRJNA778304	citrus_sinensis	Citrus sinensis	callus	EV-L44_15DAI_R3	1
 SRR16874243	PRJNA778304	citrus_sinensis	Citrus sinensis	callus	EV-L44_30DAI_R1	1	cDNA	PAIRED	Illumina NovaSeq 6000	Valencia embryogenic callus, empty-vector line
 SRR16874242	PRJNA778304	citrus_sinensis	Citrus sinensis	callus	EV-L44_30DAI_R2	1	cDNA	PAIRED	Illumina NovaSeq 6000	Valencia embryogenic callus, empty-vector line
 SRR16874241	PRJNA778304	citrus_sinensis	Citrus sinensis	callus	EV-L44_30DAI_R3	1	cDNA	PAIRED	Illumina NovaSeq 6000	Valencia embryogenic callus, empty-vector line
+SRR32263188	PRJNA1216034	carrizo	Citrus sinensis x Poncirus trifoliata	stem	wt stems 1	1	cDNA	PAIRED	Illumina HiSeq 2500	Carrizo citrange WT of CsCOI1 study; stems 18 d old
+SRR32263215	PRJNA1216034	carrizo	Citrus sinensis x Poncirus trifoliata	stem	wt stems 2	1	cDNA	PAIRED	Illumina HiSeq 2500	Carrizo citrange WT of CsCOI1 study; stems 18 d old
+SRR32263214	PRJNA1216034	carrizo	Citrus sinensis x Poncirus trifoliata	stem	wt stems 3	1	cDNA	PAIRED	Illumina HiSeq 2500	Carrizo citrange WT of CsCOI1 study; stems 18 d old
+SRR32263194	PRJNA1216034	carrizo	Citrus sinensis x Poncirus trifoliata	young leaf	wt young leaves 1	1	cDNA	PAIRED	Illumina HiSeq 2500	Carrizo citrange WT of CsCOI1 study; leaves 7 d old
+SRR32263193	PRJNA1216034	carrizo	Citrus sinensis x Poncirus trifoliata	young leaf	wt young leaves 2	1	cDNA	PAIRED	Illumina HiSeq 2500	Carrizo citrange WT of CsCOI1 study; leaves 7 d old
+SRR32263192	PRJNA1216034	carrizo	Citrus sinensis x Poncirus trifoliata	young leaf	wt young leaves 3	1	cDNA	PAIRED	Illumina HiSeq 2500	Carrizo citrange WT of CsCOI1 study; leaves 7 d old
+SRR32263197	PRJNA1216034	carrizo	Citrus sinensis x Poncirus trifoliata	mature leaf	wt untreated mature leaves 1	1	cDNA	PAIRED	Illumina HiSeq 2500	Carrizo citrange WT of CsCOI1 study; untreated
+SRR32263196	PRJNA1216034	carrizo	Citrus sinensis x Poncirus trifoliata	mature leaf	wt untreated mature leaves 2	1	cDNA	PAIRED	Illumina HiSeq 2500	Carrizo citrange WT of CsCOI1 study; untreated
+SRR32263195	PRJNA1216034	carrizo	Citrus sinensis x Poncirus trifoliata	mature leaf	wt untreated mature leaves 3	1	cDNA	PAIRED	Illumina HiSeq 2500	Carrizo citrange WT of CsCOI1 study; untreated
+SRR19277106	PRJNA839431	carrizo	Citrus sinensis x Poncirus trifoliata	leaf	CT-Car biol rep 1	2	cDNA	PAIRED	Illumina NovaSeq 6000	Carrizo control of stress-combination study; SRA lists organism as C. sinensis
+SRR19277105	PRJNA839431	carrizo	Citrus sinensis x Poncirus trifoliata	leaf	CT-Car biol rep 2	2	cDNA	PAIRED	Illumina NovaSeq 6000	Carrizo control of stress-combination study; SRA lists organism as C. sinensis
+SRR19277104	PRJNA839431	carrizo	Citrus sinensis x Poncirus trifoliata	leaf	CT-Car biol rep 3	2	cDNA	PAIRED	Illumina NovaSeq 6000	Carrizo control of stress-combination study; SRA lists organism as C. sinensis
+SRR12799421	PRJNA668159	carrizo	Citrus sinensis x Poncirus trifoliata	leaf	Carrizo Control-1	2	PCR	PAIRED	Illumina NovaSeq 6000	non-transgenic control of FT-overexpression study
+SRR12799422	PRJNA668159	carrizo	Citrus sinensis x Poncirus trifoliata	leaf	Carrizo Control-2	2	PCR	PAIRED	Illumina NovaSeq 6000	non-transgenic control of FT-overexpression study
+SRR12799423	PRJNA668159	carrizo	Citrus sinensis x Poncirus trifoliata	leaf	Carrizo Control-3	2	PCR	PAIRED	Illumina NovaSeq 6000	non-transgenic control of FT-overexpression study
+SRR27236378	PRJNA1053671	carrizo	Citrus sinensis x Poncirus trifoliata	leaf	ZC-1	2	RANDOM PCR	PAIRED	Illumina NovaSeq 6000	WT of SDE transgenic study
+SRR27236377	PRJNA1053671	carrizo	Citrus sinensis x Poncirus trifoliata	leaf	ZC-2	2	RANDOM PCR	PAIRED	Illumina NovaSeq 6000	WT of SDE transgenic study
+SRR27236376	PRJNA1053671	carrizo	Citrus sinensis x Poncirus trifoliata	leaf	ZC-3	2	RANDOM PCR	PAIRED	Illumina NovaSeq 6000	WT of SDE transgenic study

@@ -3,6 +3,7 @@
 # Run from this directory. Heavy targets belong on a compute node, e.g.:
 #     srun --cpus-per-task=16 --mem=64G make -j2 align
 # `make help` lists targets. THREADS and STRAND can be overridden: make align THREADS=16
+# HOSTSEL="poncirus_trifoliata citrus_sinensis" (or SAMPLES=...) restricts to a subset of samples.
 #
 # ---------------------------- INPUTS ----------------------------------------
 # FILES (must exist locally):
@@ -38,8 +39,10 @@ MOD_HISAT2   ?= hisat2/2.2.1
 MOD_SAMTOOLS ?= samtools/1.21
 MOD_SUBREAD  ?= subread/2.0.6
 MOD_FASTQC   ?= fastqc/0.12.1
+# per-cluster overrides (gitignored), e.g. local.mk on Ceres sets MOD_SAMTOOLS/MOD_SUBREAD
+-include local.mk
 RAW     := 30-1348328766/00_fastq
-SAMPLES := $(shell tail -n +2 samples.tsv | cut -f1)
+ALL_SAMPLES := $(shell tail -n +2 samples.tsv | cut -f1)
 
 # --- sample -> host genome (from samples.tsv / gall tissue inventory) -------
 HOST_1416wtEu635   = euonymus_japonicus_proxy
@@ -50,10 +53,30 @@ HOST_29wtHC83      = citrus_sinensis
 HOST_1416wtM26     = brassica_juncea
 HOST_29wtM26       = brassica_juncea
 HOST_29wtP46       = carica_papaya
-HOST_1416wtCC547   = poncirus_trifoliata
-HOST_1416wtCC54    = poncirus_trifoliata
-HOST_1416G-19CC547 = poncirus_trifoliata
-HOST_1416G-30CC547 = poncirus_trifoliata
+# CC = Carrizo citrange, an F1 hybrid of C. sinensis x P. trifoliata (confirmed
+# 2026-09-14; samples.tsv updated to match). No Carrizo genome exists, so
+# the CC galls are aligned to one parent, C. sinensis, and counted on its gene
+# models, as in published Carrizo RNA-seq, e.g. Afzal Naveed, Huguet-Tapia & Ali
+# 2019, J Plant Interact 14:187-204, doi:10.1080/17429145.2019.1609106 (roots
+# mapped to two C. sinensis genomes; they report only 55-73% transcriptome
+# coverage and fell back to de novo assembly). Here the CC libraries align at
+# 82-85% vs 92% for the native sweet-orange gall 29wtHC83, and a cross-species
+# test (2026-09-08) assigned 92% as many pairs to genes as that native sample.
+# All four CC galls share the hybrid genotype, so the bias from P. trifoliata
+# alleles mapping with mismatches is common to every CC sample and cancels in
+# CC-vs-CC contrasts; it does not cancel against galls on other hosts.
+# If parent of origin or Poncirus-only genes matter, add P. trifoliata as a
+# second haplotype instead: the ZK8 assembly under poncirus_trifoliata IS
+# annotated at the Citrus Genome Database (25,680 genes;
+# citrusgenomedb.org/jb2/data/Ptri_ZK8_v1.sorted.gff.gz), but its contigs are
+# named chr1_ZK8.., so pair it with CGD's jb2/data/Ptri_ZK8_v1.fasta.gz, not
+# NCBI's GCA_018350135.1 (CM031384.1..) used now.
+# CITRUS_HOST_PLAN.md (sections 1.1, 3.1, 4A) plans that two-parent `carrizo` host:
+# DVS_A1.0 + ZK8 concatenated, counted per parental copy, summed per gene pair.
+HOST_1416wtCC547   = citrus_sinensis
+HOST_1416wtCC54    = citrus_sinensis
+HOST_1416G-19CC547 = citrus_sinensis
+HOST_1416G-30CC547 = citrus_sinensis
 HOST_1416wtT49     = solanum_lycopersicum
 HOST_29wtT29       = solanum_lycopersicum
 
@@ -62,8 +85,12 @@ comboof  = $(call strainof,$1)__$(HOST_$1)
 
 HOSTS       := euonymus_japonicus_proxy citrus_sinensis brassica_juncea carica_papaya poncirus_trifoliata solanum_lycopersicum
 ANNOT_HOSTS := citrus_sinensis carica_papaya solanum_lycopersicum
+hostsamples = $(strip $(foreach s,$(ALL_SAMPLES),$(if $(filter $(HOST_$s),$1),$s)))
+# restrict the run to some hosts (or pass SAMPLES=... directly), e.g.
+#   make fractions HOSTSEL="poncirus_trifoliata citrus_sinensis"
+HOSTSEL ?=
+SAMPLES := $(if $(HOSTSEL),$(foreach h,$(HOSTSEL),$(call hostsamples,$h)),$(ALL_SAMPLES))
 COMBOS      := $(sort $(foreach s,$(SAMPLES),$(call comboof,$s)))
-hostsamples = $(strip $(foreach s,$(SAMPLES),$(if $(filter $(HOST_$s),$1),$s)))
 
 ACC_euonymus_japonicus_proxy := GCA_963580455.1
 ACC_citrus_sinensis          := GCF_022201045.2
