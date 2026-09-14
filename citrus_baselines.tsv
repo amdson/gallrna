@@ -1,0 +1,25 @@
+run	bioproject	host_ref	species	tissue	replicate	tier	library	layout	platform	notes
+DRR1031157	PRJDB41296	poncirus_trifoliata	Citrus trifoliata	stem	ZKstem_R1	1	polyA	PAIRED	Illumina NovaSeq 6000	ZK trifoliate orange; thorn-identity study
+DRR1031158	PRJDB41296	poncirus_trifoliata	Citrus trifoliata	stem	ZKstem_R2	1	polyA	PAIRED	Illumina NovaSeq 6000	ZK trifoliate orange
+DRR1031159	PRJDB41296	poncirus_trifoliata	Citrus trifoliata	stem	ZKstem_R3	1	polyA	PAIRED	Illumina NovaSeq 6000	ZK trifoliate orange
+DRR1031160	PRJDB41296	poncirus_trifoliata	Citrus trifoliata	thorn	ZKthorn_R1	1	polyA	PAIRED	Illumina NovaSeq 6000	thorn = modified shoot; second stem-like tissue
+DRR1031161	PRJDB41296	poncirus_trifoliata	Citrus trifoliata	thorn	ZKthorn_R2	1	polyA	PAIRED	Illumina NovaSeq 6000	thorn = modified shoot
+DRR1031162	PRJDB41296	poncirus_trifoliata	Citrus trifoliata	thorn	ZKthorn_R3	1	polyA	PAIRED	Illumina NovaSeq 6000	thorn = modified shoot
+SRR10848795	PRJNA599503	citrus_sinensis	Citrus sinensis	bark	CK_P1	1	cDNA	PAIRED	Illumina HiSeq 2500	healthy (mock) of HLB study; cultivar unverified
+SRR10848794	PRJNA599503	citrus_sinensis	Citrus sinensis	bark	CK_P2	1	cDNA	PAIRED	Illumina HiSeq 2500	healthy (mock) of HLB study
+SRR10848793	PRJNA599503	citrus_sinensis	Citrus sinensis	bark	CK_P3	1	cDNA	PAIRED	Illumina HiSeq 2500	healthy (mock) of HLB study
+SRR10848792	PRJNA599503	citrus_sinensis	Citrus sinensis	root	CK_R1	1	cDNA	PAIRED	Illumina HiSeq 2500	healthy (mock) of HLB study
+SRR10848791	PRJNA599503	citrus_sinensis	Citrus sinensis	root	CK_R2	1	cDNA	PAIRED	Illumina HiSeq 2500	healthy (mock) of HLB study
+SRR10848790	PRJNA599503	citrus_sinensis	Citrus sinensis	root	CK_R3	1	cDNA	PAIRED	Illumina HiSeq 2500	healthy (mock) of HLB study
+SRR10848806	PRJNA599503	citrus_sinensis	Citrus sinensis	young leaf	CK_L1	1	cDNA	PAIRED	Illumina HiSeq 2500	healthy (mock) of HLB study
+SRR10848805	PRJNA599503	citrus_sinensis	Citrus sinensis	young leaf	CK_L2	1	cDNA	PAIRED	Illumina HiSeq 2500	healthy (mock) of HLB study
+SRR10848796	PRJNA599503	citrus_sinensis	Citrus sinensis	young leaf	CK_L3	1	cDNA	PAIRED	Illumina HiSeq 2500	healthy (mock) of HLB study
+SRR16874257	PRJNA778304	citrus_sinensis	Citrus sinensis	callus	EV-L44_0DAI_R1	1	cDNA	PAIRED	Illumina NovaSeq 6000	Valencia embryogenic callus, empty-vector line; DAI = days after somatic embryogenesis induction
+SRR16874256	PRJNA778304	citrus_sinensis	Citrus sinensis	callus	EV-L44_0DAI_R2	1	cDNA	PAIRED	Illumina NovaSeq 6000	Valencia embryogenic callus, empty-vector line
+SRR16874247	PRJNA778304	citrus_sinensis	Citrus sinensis	callus	EV-L44_0DAI_R3	1	cDNA	PAIRED	Illumina NovaSeq 6000	Valencia embryogenic callus, empty-vector line
+SRR16874246	PRJNA778304	citrus_sinensis	Citrus sinensis	callus	EV-L44_15DAI_R1	1	cDNA	PAIRED	Illumina NovaSeq 6000	Valencia embryogenic callus, empty-vector line
+SRR16874245	PRJNA778304	citrus_sinensis	Citrus sinensis	callus	EV-L44_15DAI_R2	1	cDNA	PAIRED	Illumina NovaSeq 6000	Valencia embryogenic callus, empty-vector line
+SRR16874244	PRJNA778304	citrus_sinensis	Citrus sinensis	callus	EV-L44_15DAI_R3	1	cDNA	PAIRED	Illumina NovaSeq 6000	Valencia embryogenic callus, empty-vector line
+SRR16874243	PRJNA778304	citrus_sinensis	Citrus sinensis	callus	EV-L44_30DAI_R1	1	cDNA	PAIRED	Illumina NovaSeq 6000	Valencia embryogenic callus, empty-vector line
+SRR16874242	PRJNA778304	citrus_sinensis	Citrus sinensis	callus	EV-L44_30DAI_R2	1	cDNA	PAIRED	Illumina NovaSeq 6000	Valencia embryogenic callus, empty-vector line
+SRR16874241	PRJNA778304	citrus_sinensis	Citrus sinensis	callus	EV-L44_30DAI_R3	1	cDNA	PAIRED	Illumina NovaSeq 6000	Valencia embryogenic callus, empty-vector line
