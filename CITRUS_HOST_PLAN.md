@@ -129,7 +129,7 @@ good "influenced by the bacterium" candidate when they agree:
 
 **Sweet orange (Hamlin) — keep the current reference.**
 - NCBI RefSeq GCF_022201045.2 (DVS_A1.0, Valencia, haplotype A), Annotation Release 103.
-  Already in `references/plant_host/citrus_sinensis/`. 23,566 protein-coding genes, but ~7,800
+  Already in `references/plant_host/citrus_sinensis/`. 23,556 protein-coding genes, but ~7,800
   genes are "uncharacterized"/"hypothetical" and there is no GO/KEGG in the GFF, so functional
   annotation has to be added (§3.2).
 - Optional later: add DVS_B1.0 (GCA_022201065.1, Clemson annotation, 27,940 genes) as the second
@@ -142,7 +142,8 @@ This follows the "concatenate both parents' genomes" note in
 `references/plant_host/AVAILABILITY.md` and the "add *P. trifoliata* as a second haplotype"
 option in the Makefile CC comment. Until it exists, the CC galls stay on sweet orange (valid for
 CC-vs-CC contrasts only, §1.1).
-- *P. trifoliata* ZK8 v1.0 (HZAU; Peng et al. 2020, *Plant J* doi:10.1111/tpj.14993).
+- *P. trifoliata* ZK8 v1.0 (HZAU; Huang et al. 2021, *Hortic Res*, doi:10.1038/s41438-021-00505-2,
+  BioProject PRJNA554539 — the paper CGD cites; Peng et al. 2020 is a different, UF/JGI assembly).
   Same assembly as the unannotated NCBI copy we already downloaded (GCA_018350135.1), but the
   Citrus Genome Database (CGD) serves the gene models too:
   - `https://www.citrusgenomedb.org/jb2/data/Ptri_ZK8_v1.sorted.gff.gz` (7.5 MB; 25,680 genes,
@@ -154,7 +155,7 @@ CC-vs-CC contrasts only, §1.1).
     Makefile comment's `P.trifoliata_ZK8_v1.scaffolds.fa` wasn't found on CGD; the file listed
     above is the one CGD's genome browser serves.)
   - These are the genome-browser data files, not a formal download page (CGD's `/download` page
-    and the Analysis page did not link them). They are publicly readable. Cite Peng et al. 2020.
+    and the Analysis page did not link them). They are publicly readable. Cite Huang et al. 2021.
 - Contig names (`NC_0685xx` vs `chrN_ZK8`) and gene IDs (`gene-LOC...` vs `Pt...`) don't
   collide, so the two can be concatenated as they are, alongside the `agro_` strain contigs.
 - ZK8 is a specific *Poncirus* accession, not Carrizo's actual pollen parent. *Poncirus* is

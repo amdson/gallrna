@@ -106,7 +106,7 @@ Neither compares itself against a combined reference; the three benchmarks above
   gene content and expression response to virulence induction between two *Agrobacterium*
   strains. *Front Microbiol* 10:1554.
   [doi:10.3389/fmicb.2019.01554](https://doi.org/10.3389/fmicb.2019.01554). Template for
-  cross-strain orthology and promoter analysis (PIPELINE.md steps 7-8; HARYONO2019_PIPELINE.md).
+  cross-strain orthology and promoter analysis (PIPELINE.md steps 8-9; HARYONO2019_PIPELINE.md).
 - Deeken R, Engelmann J, Efetova M, Czirjak T, et al. (2006) An integrated view of gene
   expression and solute profiles of *Arabidopsis* tumors: a genome-wide approach. *Plant Cell*
   18:3617-3634. [doi:10.1105/tpc.106.044743](https://doi.org/10.1105/tpc.106.044743). Host
@@ -164,7 +164,7 @@ The "Original Download" .gb files are sequence-only, so the RAST-annotated versi
   [doi:10.1128/MRA.00207-19](https://doi.org/10.1128/MRA.00207-19) (1D159 = ATCC 27912). Its
   relation to strain 29 is **(unverified)**.
 - The 1416 (SnapGene) and 29 (RAST) annotations come from different pipelines. Harmonise them
-  by orthology before comparing genes across strains (PIPELINE.md step 7).
+  by orthology before comparing genes across strains (PIPELINE.md step 8).
 
 **C58** (comparison and orthology only; no samples map to it): GenBank AE007869 (circular
 chromosome, 2,841,580 bp), AE007870 (linear chromosome, 2,075,577 bp), AE007871 (pTi,
@@ -312,6 +312,22 @@ samtools and subread. Conda versions come from `environment.yml`.
 - **Normalise each organism separately** when DE starts: the plant : bacterium ratio varies by
   sample (PIPELINE.md step 6).
 
+**Host functional annotation (Makefile step 7, `make annotate`; added 2026-09-15)**
+
+| tool / data | version | citation | link |
+|---|---|---|---|
+| eggNOG-mapper | 2.1.13 (venv, `scripts/emapper-env.sh`) | Cantalapiedra CP, Hernandez-Plaza A, Letunic I, Bork P, Huerta-Cepas J (2021) eggNOG-mapper v2: functional annotation, orthology assignments, and domain prediction at the metagenomic scale. *Mol Biol Evol* msab293. [doi:10.1093/molbev/msab293](https://doi.org/10.1093/molbev/msab293) | <https://github.com/eggnogdb/eggnog-mapper> |
+| eggNOG 5.0 (emapperdb 5.0.2) | downloaded 2026-09-14 | Huerta-Cepas J, Szklarczyk D, Heller D, et al. (2019) eggNOG 5.0. *Nucleic Acids Res* 47:D309-D314. [doi:10.1093/nar/gky1085](https://doi.org/10.1093/nar/gky1085) | <http://eggnog5.embl.de/download/emapperdb-5.0.2/> |
+| DIAMOND | 2.1.24 (module) | Buchfink B, Reuter K, Drost HG (2021) Sensitive protein alignments at tree-of-life scale using DIAMOND. *Nat Methods* 18:366-368. [doi:10.1038/s41592-021-01101-x](https://doi.org/10.1038/s41592-021-01101-x) | <https://github.com/bbuchfink/diamond> |
+| Arabidopsis proteome | Ensembl Plants release 63, TAIR10 `pep.all` | citation to add | <https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-63/fasta/arabidopsis_thaliana/pep/> |
+| host proteins | NCBI RefSeq `PROT_FASTA` | O'Leary et al. 2024 (§5) | NCBI Datasets API |
+
+Settings: longest protein per gene (`scripts/longest_proteins.py`); eggNOG-mapper in DIAMOND mode,
+`--tax_scope Viridiplantae`, default GO evidence filter; DIAMOND `blastp --more-sensitive -k 1
+-e 1e-5` in both directions, with reciprocal best hits flagged (`scripts/gene_annotation.py`).
+The eggNOG database is fetched from eggnog5.embl.de because emapper's own download host,
+eggnogdb.embl.de, no longer resolves.
+
 ## 7. Checks and helper scripts
 
 | script | what it does | output |
@@ -365,7 +381,7 @@ Already in `environment.yml`, for later steps:
 | BEDTools | interval work | Quinlan AR, Hall IM (2010) *Bioinformatics* 26:841-842. [doi:10.1093/bioinformatics/btq033](https://doi.org/10.1093/bioinformatics/btq033) |
 | StringTie 3.0.0 | transcript assembly (why `--dta` is set) | Pertea M, Pertea GM, Antonescu CM, et al. (2015) *Nat Biotechnol* 33:290-295. [doi:10.1038/nbt.3122](https://doi.org/10.1038/nbt.3122); Kovaka S, Zimin AV, Pertea GM, et al. (2019) StringTie2. *Genome Biol* 20:278. [doi:10.1186/s13059-019-1910-1](https://doi.org/10.1186/s13059-019-1910-1) |
 | Salmon 1.10.3 | per-parental-copy quantification option (CITRUS_HOST_PLAN.md §4A) | Patro R, Duggal G, Love MI, Irizarry RA, Kingsford C (2017) *Nat Methods* 14:417-419. [doi:10.1038/nmeth.4197](https://doi.org/10.1038/nmeth.4197) |
-| MEME Suite | promoter motifs (PIPELINE.md step 8) | Bailey TL, Johnson J, Grant CE, Noble WS (2015) *Nucleic Acids Res* 43:W39-W49. [doi:10.1093/nar/gkv416](https://doi.org/10.1093/nar/gkv416) |
+| MEME Suite | promoter motifs (PIPELINE.md step 9) | Bailey TL, Johnson J, Grant CE, Noble WS (2015) *Nucleic Acids Res* 43:W39-W49. [doi:10.1093/nar/gkv416](https://doi.org/10.1093/nar/gkv416) |
 | DESeq2 1.50.2 | differential expression (step 6) | Love MI, Huber W, Anders S (2014) *Genome Biol* 15:550. [doi:10.1186/s13059-014-0550-8](https://doi.org/10.1186/s13059-014-0550-8) |
 | tximport 1.38.2 | Salmon → gene counts | Soneson C, Love MI, Robinson MD (2015) *F1000Research* 4:1521. [doi:10.12688/f1000research.7563.2](https://doi.org/10.12688/f1000research.7563.2) |
 | edgeR 4.8.2 | differential expression | Chen Y, Chen L, Lun ATL, Baldoni PL, Smyth GK (2025) edgeR v4. *Nucleic Acids Res* 53:gkaf018. [doi:10.1093/nar/gkaf018](https://doi.org/10.1093/nar/gkaf018); Robinson MD, McCarthy DJ, Smyth GK (2010) *Bioinformatics* 26:139-140. [doi:10.1093/bioinformatics/btp616](https://doi.org/10.1093/bioinformatics/btp616) |
@@ -373,7 +389,7 @@ Already in `environment.yml`, for later steps:
 
 Planned in PIPELINE.md and CITRUS_HOST_PLAN.md (links only until adopted):
 
-- OrthoFinder (step 7): Emms DM, Kelly S (2019) *Genome Biol* 20:238.
+- OrthoFinder (step 8): Emms DM, Kelly S (2019) *Genome Biol* 20:238.
   [doi:10.1186/s13059-019-1832-y](https://doi.org/10.1186/s13059-019-1832-y)
 - JASPAR 2024 CORE plants (motif scans): Rauluseviciute I, Riudavets-Puig R, Blanc-Mathieu R,
   et al. (2024) *Nucleic Acids Res* 52:D174-D182.
@@ -383,8 +399,8 @@ Planned in PIPELINE.md and CITRUS_HOST_PLAN.md (links only until adopted):
   [doi:10.1093/bioinformatics/btaa1016](https://doi.org/10.1093/bioinformatics/btaa1016)
 - Citrus Genome Database (ZK8 FASTA/GFF, MCscan anchors `Csin_DVS_A_v1.Ptri_ZK8_v1.anchors.gz`):
   <https://www.citrusgenomedb.org>
-- eggNOG-mapper, DIAMOND vs TAIR10/Araport11, PlantRegMap / PlantTFDB (`Citrus_sinensis`),
-  PLAZA dicots 5.0: see CITRUS_HOST_PLAN.md §3.2. Citations to add when used.
+- PlantRegMap / PlantTFDB (`Citrus_sinensis`), PLAZA dicots 5.0: see CITRUS_HOST_PLAN.md §3.2.
+  Citations to add when used. (eggNOG-mapper and DIAMOND are now in use: §6, step 7.)
 - Public healthy-tissue baselines, run lists in `citrus_baselines.tsv` (downloads from ENA,
   <https://www.ebi.ac.uk/ena/browser/view/ACCESSION>):
   - Carrizo: [PRJNA1216034](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1216034),
@@ -420,7 +436,7 @@ citations.
    2020 for ZK8. That paper (UF / JGI authors) describes a different assembly, probably the
    JGI v1.3.1 genome also listed on CGD. ZK8 (GCA_018350135.1, PRJNA554539, HZAU) is Huang et
    al. 2021 *Hortic Res* ([doi:10.1038/s41438-021-00505-2](https://doi.org/10.1038/s41438-021-00505-2)),
-   the paper CGD cites.
+   the paper CGD cites. **Fixed in the plan 2026-09-15.**
 2. **1416 pAt1 size.** Our `FINAL.gb` conversion gives 589,645 bp (references/README.md), but
    Alabed et al. 2023 say 519,735 bp. The same 519,735 bp figure appears as the AT plasmid of
    1D159 in Huo et al. 2019, which suggests a copy error in the paper. Confirm with the
@@ -428,7 +444,7 @@ citations.
 3. **C58 accessions in PIPELINE.md** list AE007869 / AE007870 / AE007872 and leave out AE007871
    (the Ti plasmid). references/README.md lists NC_003065 for it.
 4. **DVS_A1.0 gene count:** NCBI reports 23,556 protein-coding genes; CITRUS_HOST_PLAN.md §3.1
-   says 23,566.
+   said 23,566. **Fixed 2026-09-15.**
 5. **Unknowns to ask the collaborators about:** strain 29's designation and publication; the
    tomato cultivar (T29, T49); the *Euonymus* cultivars (Eu, and golden Geu) against the
    *E. europaeus* proxy; the library kit (polyA and unstranded are inferred from the data).
