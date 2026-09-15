@@ -2,9 +2,13 @@
 
 > Scoping doc, 2026-09-14; revised the same day once the CC host was confirmed as **Carrizo
 > citrange** (merges the reasoning from the CC comment in the Makefile). Covers the 5
-> citrus-host samples only. Nothing here is automated yet; §5 lists proposed Makefile
-> additions. Public accessions were checked against NCBI/ENA/CGD on this date; anything not
-> verified is marked **(unverified)**.
+> citrus-host samples only. Automated so far: host functional annotation (`make annotate`);
+> §5 lists the other proposed Makefile additions. Public accessions were checked against
+> NCBI/ENA/CGD on this date; anything not verified is marked **(unverified)**.
+>
+> **Goal:** the collaborator wants a shortlist of promoters/genes to target in a follow-up
+> experiment. §4 F is the path to that list; the rest of §4 is supporting analysis for
+> explaining why a candidate responds, and is optional.
 
 ## 1. What we have
 
@@ -338,8 +342,41 @@ map for the PlantRegMap/PlantTFDB files (TF family, TFBS).
    the only transcripts the bacterium puts in the plant genome directly. They're also the
    promoter parts the GAANTRY/"Symbionts" work would reuse.
 
+**F. Candidate shortlist for the follow-up experiment (decided 2026-09-14).**
+Don't trust one statistic: run several simple ranking methods, take each method's **top 20**,
+and compare the lists **by hand** alongside the annotation table
+(`references/plant_host/<host>/<host>.genes.tsv`, from `make annotate`). Genes that come up
+under several methods are the strongest candidates. Make separate lists for Hamlin, the wt
+Carrizo galls, and the G-19/G-30 Carrizo galls; the last is the closest to an engineered-strain
+gall.
+1. **Gall expression**: within-sample percentile (or TPM), consistent across the galls. Measures
+   promoter strength, and needs only the existing gall counts.
+2. **Fold change vs baseline**: DESeq2 with shrunken log2FC (`lfcShrink`) and a minimum-
+   expression cut-off, so near-zero genes can't top the list.
+3. **Percentile rank shift**: gall percentile minus the median healthy-tissue percentile. Robust
+   to cross-study depth and library differences.
+4. **Rank products** across the galls (Breitling et al. 2004, *FEBS Lett* 573:83): genes ranked
+   near the top of the per-gall change lists in every gall. Rewards consistency.
+5. **RankComp / relative expression orderings** (Wang et al. 2015, *Bioinformatics* 31:62): gene
+   pairs whose order is stable in healthy tissue and flips in the gall. Designed for one sample
+   against a reference set from other studies.
+6. **Tissue specificity, tau** (Yanai et al. 2005, *Bioinformatics* 21:650), with gall as one
+   tissue alongside stem, bark, leaf, root and callus: gall-specific genes.
+7. Listed separately: the T-DNA promoters (§1.2), as bacterial benchmarks.
+
+Before ranking, drop genes not clearly expressed in the galls, organellar and rRNA genes, and
+multi-copy families whose promoter can't be cloned unambiguously. Methods 2-6 need healthy-
+tissue counts: the tier-1 runs in `citrus_baselines.tsv` are enough (Carrizo stem and leaves,
+PRJNA1216034; sweet-orange bark, root, leaf and callus, PRJNA599503 / PRJNA778304). Output: one
+merged table (gene, annotation, Arabidopsis ortholog, rank under each method, expression per
+gall) plus the ~1.5 kb upstream sequence of each pick. The picks then go to a reporter assay
+(GUS/luciferase in galls), which is the actual measurement of promoter activity.
+
 ## 5. Proposed next steps
 
+0. **Shortlist (§4 F), first priority.** Once `make annotate` has written the sweet-orange gene
+   table: method 1 from the existing gall counts, then align/count the tier-1 baselines as a
+   Slurm job for methods 2-6, then the merged top-20 table for manual review.
 1. Makefile: add a `carrizo` host (DVS_A1.0 FASTA+GFF + CGD ZK8 FASTA+GFF from the §3.1 URLs),
    point `HOST_*CC*` at it, add it to `ANNOT_HOSTS`, then
    `make HOSTSEL=carrizo fractions counts matrices`. Keep the current sweet-orange-only CC
