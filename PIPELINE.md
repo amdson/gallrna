@@ -151,6 +151,27 @@ supplementary table for the paper. Nothing downstream reads it.
   md5-verified, everything else is make-tracked.
 - Status: submitted 2026-09-15 as job 22046668 (see HANDOFF.md).
 
+### 5d. Candidate shortlist, method 1 (`make shortlist`)
+- CITRUS_HOST_PLAN.md §4 F method 1: host genes ranked by expression in the galls themselves,
+  no baseline. `scripts/shortlist_expression.py` turns the citrus gall counts into TPM (gene
+  lengths from featureCounts), takes each gene's within-gall percentile among protein-coding
+  nuclear genes (organellar contigs NC_008334.1 and NC_037463.1 dropped), and scores a group
+  by the gene's **lowest** percentile across that group's galls, so only genes high in every
+  gall rank; ties break on mean TPM.
+- Groups (plan §4 F): `hamlin` (29wtHC83), `carrizo_wt` (1416wtCC547, 1416wtCC54),
+  `carrizo_eng` (G-19, G-30) and `all`. Outputs: `results/shortlist/method1_expression_<group>_top20.tsv`
+  (in git, with TPM per gall and the genes.tsv annotation columns) and the full 23,436-gene
+  table `04_matrix/citrus_gall_expression.tsv` for merging with methods 2-6.
+  `n_same_ath_hit` = citrus genes sharing the same best Arabidopsis hit, a rough multi-copy warning.
+- Result (2026-09-15): the `all` top 20 is the constitutive-promoter set (ribosomal proteins,
+  polyubiquitin, cyclophilin ROC1, metallothionein MT2A, NDPK1, TCTP) plus stress/wound genes
+  (MLP423-like major allergen at rank 1, LEA5/SAG21, dehydrin ERD14, GRP7, extensin). Hamlin
+  adds aquaporins (PIP1, PIP2, TIP1) and extensins; G-19/G-30 add protease inhibitors, an
+  endochitinase and dormancy-associated DYL1. Which of these are gall-specific needs the
+  baselines (5c).
+- Runs in seconds; from a fresh worktree run the script directly, since the checkout's new
+  script timestamps make `make` want to rebuild the whole gall chain first.
+
 ### 6. Differential expression
 - Data: split count matrices + sample metadata (strain, genotype, host)
 - Tools: R in conda env `rnaseq`: DESeq2, tximport, edgeR, pheatmap, ggplot2 (not installed yet)

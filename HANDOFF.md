@@ -54,7 +54,7 @@ sets the Ceres module versions. Home has a 30 GB quota.
 | 6 differential expression | not started; R/DESeq2 not installed |
 | 7 `make annotate` | sweet orange done 2026-09-15 -> `references/plant_host/citrus_sinensis/citrus_sinensis.genes.tsv`: 28,080 genes; of 23,556 protein-coding, 97% eggNOG-annotated, 49% with GO, 94% with an Arabidopsis hit, 56% reciprocal best hits. Papaya and tomato not run; *Poncirus* ZK8 not supported yet |
 | 8-9 bacterial orthology, promoters | not started |
-| citrus shortlist (plan §4 F) | **not started: next** |
+| citrus shortlist (plan §4 F) | method 1 (gall expression) done 2026-09-15 -> `results/shortlist/method1_expression_*_top20.tsv`; methods 2-6 wait for the baselines |
 
 ## What we've learned
 
@@ -86,8 +86,11 @@ sets the Ceres module versions. Home has a 30 GB quota.
 
 ## Next steps, in order
 
-1. **Shortlist method 1:** rank genes by expression across the five citrus galls, from
-   `04_matrix/plant_citrus_sinensis.tsv` joined to `genes.tsv` on gene ID. Cheap.
+1. **Shortlist method 1: done 2026-09-15** (`make shortlist`, PIPELINE.md 5d) ->
+   `results/shortlist/method1_expression_{hamlin,carrizo_wt,carrizo_eng,all}_top20.tsv` and the
+   full table `04_matrix/citrus_gall_expression.tsv`. Top of the lists = constitutive promoters
+   (ribosomal, ubiquitin, cyclophilin, metallothionein) plus stress/wound genes (MLP423-like,
+   LEA5, dehydrin, extensins, aquaporins in Hamlin). Review by hand once methods 2-6 exist.
 2. **`make baselines`** exists (PIPELINE.md 5c) and the tier-1 job is running (status table).
    When it finishes: read `logs/baseline_summary.tsv` (alignment rate and assigned fraction per
    run; the Carrizo runs should sit near the CC galls' 82-85%, the sweet-orange runs near 92%),

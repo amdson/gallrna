@@ -109,7 +109,7 @@ ACC_solanum_lycopersicum     := GCF_036512215.1
 .PHONY: help all verify qc trim strain-refs host-genomes refs combined align fractions counts matrices mapstats annotate
 
 help:
-	@echo "targets: verify qc trim refs (strain-refs host-genomes) combined align fractions counts matrices mapstats all annotate baselines"
+	@echo "targets: verify qc trim refs (strain-refs host-genomes) combined align fractions counts matrices mapstats all annotate baselines shortlist"
 
 all: verify qc fractions matrices
 
@@ -311,6 +311,22 @@ $(BASE_DIR)/counts/%.txt: $(BASE_DIR)/align/%.bam
 04_matrix/baseline_%.tsv: $$(foreach r,$$(call baseruns,$$*),$(BASE_DIR)/counts/$$r.txt)
 	mkdir -p 04_matrix
 	$(CONDA)/python scripts/merge_counts.py $@ drop agro_ $^
+
+# ---------------------------- 5d. candidate shortlist, method 1 -------------
+# CITRUS_HOST_PLAN.md section 4 F, method 1: rank host genes by expression in the galls
+# themselves (TPM -> within-gall percentile; a group's score is the gene's lowest percentile
+# across the group's galls). Needs only the gall counts and genes.tsv, no baseline. Writes
+# the full table to 04_matrix/ and one top-20 per group to results/shortlist/ (in git).
+# Methods 2-6 need the baselines (5c) and are not automated yet.
+SHORTLIST_GROUPS := hamlin=29wtHC83 carrizo_wt=1416wtCC547,1416wtCC54 \
+                    carrizo_eng=1416G-19CC547,1416G-30CC547 \
+                    all=29wtHC83,1416wtCC547,1416wtCC54,1416G-19CC547,1416G-30CC547
+.PHONY: shortlist
+shortlist: results/shortlist/method1_expression_all_top20.tsv
+results/shortlist/method1_expression_all_top20.tsv: 04_matrix/plant_citrus_sinensis.tsv \
+        references/plant_host/citrus_sinensis/citrus_sinensis.genes.tsv scripts/shortlist_expression.py
+	python3 scripts/shortlist_expression.py $< 03_counts/29wtHC83.txt $(word 2,$^) \
+	  04_matrix/citrus_gall_expression.tsv results/shortlist $(SHORTLIST_GROUPS)
 
 # 6. differential expression: not automated yet - needs strandedness + design
 # decisions (see PIPELINE.md step 6). Matrices in 04_matrix/ are DESeq2-ready.
