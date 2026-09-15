@@ -31,5 +31,7 @@ dependencies:
   - bioconductor-edger=4.8.2
   - r-pheatmap
   - r-ggplot2
+  # reference conversion (scripts/convert_refs.py)
+  - biopython
   # transfer convenience
   - lftp

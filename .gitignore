@@ -1,15 +1,18 @@
 # raw sequencing deliveries (large; live on cluster storage, not in git)
-30-*/
-
+30-*
+.claude/
 # pipeline outputs (all regenerable via make)
-01_trim/
-02_align/
-03_counts/
-04_matrix/
-qc/
+figures
+notebooks/.ipynb_checkpoints
+notebooks/__pycache__
+01_trim
+02_align
+03_counts
+04_matrix
+qc
 logs/
-references/combined/
-references/plant_host/*/
+references/combined
+references/plant_host/*
 !references/plant_host/AVAILABILITY.md
 references/agrobacterium/
 
@@ -27,3 +30,6 @@ credentials*
 # junk
 .DS_Store
 ._*
+
+# per-cluster make overrides
+local.mk

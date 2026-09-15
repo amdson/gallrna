@@ -1,7 +1,6 @@
 # Handoff: gallrna (2026-09-15)
 
-> State of the repo and data on 2026-09-15, for whoever picks this up next (person or Claude
-> session). Start here, then follow the pointers.
+> State of the repo and data on 2026-09-15
 
 ## The project
 
@@ -12,7 +11,7 @@ split by organism afterwards. Current focus: the **5 citrus galls**, one Hamlin 
 and G-30).
 
 **Goal (set 2026-09-14):** give the collaborator a **shortlist of promoters/genes to target in a
-follow-up experiment** (CITRUS_HOST_PLAN.md §4 F). No gall has an uninoculated control, so galls
+follow-up experiment** No gall has an uninoculated control, so galls
 are compared against public healthy-tissue RNA-seq of the same genotype.
 
 ## Where things live
