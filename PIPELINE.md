@@ -171,6 +171,13 @@ supplementary table for the paper. Nothing downstream reads it.
   baselines (5c).
 - Runs in seconds; from a fresh worktree run the script directly, since the checkout's new
   script timestamps make `make` want to rebuild the whole gall chain first.
+- **Notebook:** `notebooks/03_citrus_shortlist.ipynb` is the interactive version of the whole
+  non-cluster shortlist work: filters, TPM/percentiles, gall concordance, method 1 with
+  interpretation and figures (`figures/shortlist_*.png`), multi-copy warnings, and guarded
+  cells for methods 3 (percentile shift), 4 (rank products) and 6 (tau) plus a merged table
+  per group (`results/shortlist/merged_<group>.tsv`) that execute once
+  `04_matrix/baseline_citrus_sinensis.tsv` exists. It checks that its method-1 lists match the
+  script's. Execute headless with the viz venv (`notebooks/README.md`).
 
 ### 6. Differential expression
 - Data: split count matrices + sample metadata (strain, genotype, host)

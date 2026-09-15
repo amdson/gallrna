@@ -41,6 +41,7 @@ sets the Ceres module versions. Home has a 30 GB quota.
 | `references/README.md` | what's in `references/`, host by host |
 | `samples.tsv` | the 14 samples; CC = Carrizo citrange, HC = Hamlin |
 | `citrus_baselines.tsv` | 42 public baseline runs (tier 1 and 2), each checked against NCBI/ENA labels |
+| `notebooks/03_citrus_shortlist.ipynb` | the shortlist work off the cluster: method 1 with figures and interpretation, methods 3/4/6 once the baselines exist (viz venv, `notebooks/README.md`) |
 | `HARYONO2019_PIPELINE.md` | template paper for the bacterial steps 8-9 |
 | `SETUP.md` | new-cluster setup (the committed copy is older than the local edits; see below) |
 
