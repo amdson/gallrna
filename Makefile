@@ -285,7 +285,7 @@ $(EGGNOG_DATA)/eggnog.db:
 	test -s $(EGGNOG_DATA)/eggnog_proteins.dmnd && test -s $@
 
 references/plant_host/%.protein.faa: references/plant_host/%.fasta
-	curl -sL "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/$(ACC_$(notdir $*))/download?include_annotation_type=PROT_FASTA" \
+	curl -fsSL --retry 3 "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/$(ACC_$(notdir $*))/download?include_annotation_type=PROT_FASTA" \
 	  -o $(@D)/prot.zip
 	unzip -oq $(@D)/prot.zip -d $(@D)/prot_tmp
 	find $(@D)/prot_tmp -name "protein.faa" -exec mv {} $@ \;
@@ -295,10 +295,16 @@ references/plant_host/%.protein.faa: references/plant_host/%.fasta
 references/plant_host/%.longest.faa: references/plant_host/%.protein.faa scripts/longest_proteins.py
 	python3 scripts/longest_proteins.py refseq references/plant_host/$*.gff3 $< $@
 
-$(ATH).longest.faa: scripts/longest_proteins.py
+# Separate target so an existing copy is reused: on 2026-09-15 a compute node could not
+# resolve ftp.ensemblgenomes.ebi.ac.uk. If a job fails here, run
+#   make references/plant_host/arabidopsis_thaliana/arabidopsis_thaliana.pep.all.fa.gz
+# on the login node first (9.7 MB).
+$(ATH).pep.all.fa.gz:
 	mkdir -p $(@D)
-	curl -sL $(ATH_PEP) -o $(ATH).pep.all.fa.gz
-	python3 scripts/longest_proteins.py ensembl $(ATH).pep.all.fa.gz $@ $(ATH).agi.tsv
+	curl -fsSL --retry 3 -o $@.part $(ATH_PEP) && mv $@.part $@
+
+$(ATH).longest.faa: $(ATH).pep.all.fa.gz scripts/longest_proteins.py
+	python3 scripts/longest_proteins.py ensembl $< $@ $(ATH).agi.tsv
 
 %.dmnd: %.longest.faa
 	module load $(MOD_DIAMOND) && diamond makedb --in $< -d $* --threads $(THREADS) --quiet
