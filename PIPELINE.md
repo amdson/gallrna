@@ -129,6 +129,28 @@ supplementary table for the paper. Nothing downstream reads it.
   included, and divides by mapped reads only, so unmapped plant reads inflate its bacterial share
   (about 2x for *Euonymus*). Use `mapping_stats.tsv` for anything reported.
 
+### 5c. Public healthy-tissue baselines (`make baselines`)
+- Data: the runs in `citrus_baselines.tsv` (chosen in CITRUS_HOST_PLAN.md §3.3), fetched from
+  ENA with `scripts/ena_fetch.sh` (portal filereport API -> `fastq_ftp` + md5 check; no
+  sra-tools). Tier 1 is 27 countable runs, ~105 GB of fastq: sweet-orange bark/root/leaf
+  (PRJNA599503), Valencia callus (PRJNA778304), Carrizo stem/leaf (PRJNA1216034).
+- Tools and settings: identical to steps 2, 4 and 5 (fastp defaults, HISAT2 `--dta`,
+  featureCounts `-p --countReadPairs -s 0 -t gene -g ID`), but against a **plant-only** HISAT2
+  index built next to the genome (`references/plant_host/<host>/<host>.*.ht2`): the baselines
+  have no bacterial reads to compete with, and the same NCBI GFF gives the same gene IDs as the
+  gall matrices.
+- Reference choice: Carrizo runs -> sweet orange, like the CC galls (`BASE_REF_carrizo`), so
+  gall and baseline share the hybrid-mapping bias. *Poncirus* runs (PRJDB41296) are listed but
+  skipped until an annotated ZK8 reference exists (`BASE_HOSTS` controls this).
+- Output: `05_baseline/{fastq,trim,align,counts}/` (symlink into 90daydata like the other
+  output dirs) and `04_matrix/baseline_<host>.tsv`, one column per run accession; join
+  tissue/replicate labels from `citrus_baselines.tsv`. `scripts/baselines.slurm` also writes
+  `logs/baseline_summary.tsv` (read pairs, HISAT2 alignment rate, featureCounts assignment).
+- Run: `sbatch scripts/baselines.slurm` (48 cores, 4 runs at a time; `BASE_TIER=2` adds the
+  tier-2 Carrizo leaf controls, `BASE_RUNS=...` a subset). Rerunning resumes: downloads are
+  md5-verified, everything else is make-tracked.
+- Status: submitted 2026-09-15 as job 22046668 (see HANDOFF.md).
+
 ### 6. Differential expression
 - Data: split count matrices + sample metadata (strain, genotype, host)
 - Tools: R in conda env `rnaseq`: DESeq2, tximport, edgeR, pheatmap, ggplot2 (not installed yet)

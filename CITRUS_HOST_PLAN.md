@@ -387,6 +387,10 @@ gall) plus the ~1.5 kb upstream sequence of each pick. The picks then go to a re
    pairs (9 Carrizo stem/leaf, 6 *Poncirus* stem/thorn, 9 sweet orange bark/root/leaf,
    9 sweet orange callus). Tier 2: 9 Carrizo leaf controls, ~0.21 billion. All run accessions
    were matched to their sample labels on NCBI/ENA on 2026-09-14.
+   **Done 2026-09-15** (PIPELINE.md 5c, `scripts/baselines.slurm`): the 27 sweet-orange and
+   Carrizo tier-1 runs are being counted on DVS_A1.0 (Carrizo on sweet orange, like the CC
+   galls, until step 1 gives a `carrizo` host). The 6 *Poncirus* runs wait for an annotated
+   ZK8 reference.
 3. Annotation layer (§4 C): sweet orange via `sbatch scripts/annotate.slurm` (eggNOG-mapper in
    a venv from `scripts/emapper-env.sh`, DIAMOND from the cluster module). Next: ZK8 proteins,
    the Cs<->Pt pair table, and Salmon if it's chosen for §4 A.

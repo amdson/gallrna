@@ -21,7 +21,7 @@ are compared against public healthy-tissue RNA-seq of the same genotype.
 |---|---|
 | code and docs | this repo; GitHub `amdson/gallrna`, branch `main` |
 | raw reads | `30-1348328766/` -> `/90daydata/small_grains/30-1348328766` (group dir, 60 GB) |
-| pipeline outputs | `01_trim 02_align 03_counts 04_matrix qc references/combined references/plant_host/<host>`, all symlinks into `/90daydata/small_grains/andrew.dickson/gallrna_data/` (~160 GB: trim 52, align 42, references 66 incl. the 48 GB eggNOG database, qc 1.8) |
+| pipeline outputs | `01_trim 02_align 03_counts 04_matrix 05_baseline qc references/combined references/plant_host/<host>`, all symlinks into `/90daydata/small_grains/andrew.dickson/gallrna_data/` (~160 GB: trim 52, align 42, references 66 incl. the 48 GB eggNOG database, qc 1.8; plus the public baselines under `05_baseline`, ~105 GB raw + trimmed + BAM once step 5c finishes) |
 | eggNOG-mapper database | `/90daydata/small_grains/andrew.dickson/gallrna_data/references/eggnog_data` |
 | collaborator files (gitignored, unpublished) | `Strain 1416/`, `Strain 29/`, `C58_ALIGNED/`, `docs/` |
 
@@ -35,7 +35,7 @@ sets the Ceres module versions. Home has a 30 GB quota.
 
 | file | contents |
 |---|---|
-| `PIPELINE.md` | steps 0-9: what each does, status, how to run; 5b explains the mapping-QC table |
+| `PIPELINE.md` | steps 0-9: what each does, status, how to run; 5b explains the mapping-QC table, 5c the public baselines |
 | `CITRUS_HOST_PLAN.md` | the citrus analysis: data, hybrid hosts, baselines, the §4 F shortlist method, next steps (§5), collaborator asks (§6) |
 | `SOURCES.md` | citation and justification for every dataset and tool; §12 lists open discrepancies |
 | `references/README.md` | what's in `references/`, host by host |
@@ -50,6 +50,7 @@ sets the Ceres module versions. Home has a 30 GB quota.
 |---|---|
 | 0-5 verify -> count | done for all 14 samples (2026-09-08). Matrices: `04_matrix/agro_strain_{1416,29}.tsv`, `plant_{citrus_sinensis,carica_papaya,solanum_lycopersicum}.tsv`. *Euonymus* and *B. juncea* have no gene models: mapping fractions only |
 | 5b `make mapstats` | done 2026-09-14 -> `logs/mapping_stats.tsv`, the per-sample table for the paper. Use it, not `logs/mapping_fractions.tsv` |
+| 5c `make baselines` | **running**: job 22046668 submitted 2026-09-15 from the `worktree-baselines` worktree (ENA download -> fastp -> HISAT2 plant-only -> featureCounts for the 27 tier-1 sweet-orange/Carrizo runs, ~105 GB). Output: `04_matrix/baseline_citrus_sinensis.tsv` (on 90daydata, visible from any checkout) and `logs/baseline_summary.tsv` plus the Slurm log `logs/baselines-22046668.out` in that worktree's `logs/`. Check with `squeue -u $USER`. *Poncirus* runs skipped until ZK8 is annotated |
 | 6 differential expression | not started; R/DESeq2 not installed |
 | 7 `make annotate` | sweet orange done 2026-09-15 -> `references/plant_host/citrus_sinensis/citrus_sinensis.genes.tsv`: 28,080 genes; of 23,556 protein-coding, 97% eggNOG-annotated, 49% with GO, 94% with an Arabidopsis hit, 56% reciprocal best hits. Papaya and tomato not run; *Poncirus* ZK8 not supported yet |
 | 8-9 bacterial orthology, promoters | not started |
@@ -87,9 +88,11 @@ sets the Ceres module versions. Home has a 30 GB quota.
 
 1. **Shortlist method 1:** rank genes by expression across the five citrus galls, from
    `04_matrix/plant_citrus_sinensis.tsv` joined to `genes.tsv` on gene ID. Cheap.
-2. **Write a `make baselines` target** (ENA fastq -> fastp -> HISAT2 plant-only index ->
-   featureCounts, same settings as the galls). Run the tier-1 runs in `citrus_baselines.tsv` as a
-   Slurm job.
+2. **`make baselines`** exists (PIPELINE.md 5c) and the tier-1 job is running (status table).
+   When it finishes: read `logs/baseline_summary.tsv` (alignment rate and assigned fraction per
+   run; the Carrizo runs should sit near the CC galls' 82-85%, the sweet-orange runs near 92%),
+   then copy `04_matrix/baseline_citrus_sinensis.tsv` to `/project`. Add `05_baseline` as a
+   symlink into 90daydata in the main checkout (the job ran from the worktree, which has one).
 3. **Methods 2-6**, then the merged top-20 table, manual review, and ~1.5 kb promoter sequences
    for the picks.
 4. **Ask the collaborators** (plan §6; SOURCES.md §12 item 5): mock tissue, G-19/G-30 construct
