@@ -9,6 +9,8 @@ notebooks/__pycache__
 02_align
 03_counts
 04_matrix
+05_baseline/
+qc/
 qc
 logs/
 references/combined

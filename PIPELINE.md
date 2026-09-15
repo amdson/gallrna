@@ -129,6 +129,56 @@ supplementary table for the paper. Nothing downstream reads it.
   included, and divides by mapped reads only, so unmapped plant reads inflate its bacterial share
   (about 2x for *Euonymus*). Use `mapping_stats.tsv` for anything reported.
 
+### 5c. Public healthy-tissue baselines (`make baselines`)
+- Data: the runs in `citrus_baselines.tsv` (chosen in CITRUS_HOST_PLAN.md §3.3), fetched from
+  ENA with `scripts/ena_fetch.sh` (portal filereport API -> `fastq_ftp` + md5 check; no
+  sra-tools). Tier 1 is 27 countable runs, ~105 GB of fastq: sweet-orange bark/root/leaf
+  (PRJNA599503), Valencia callus (PRJNA778304), Carrizo stem/leaf (PRJNA1216034).
+- Tools and settings: identical to steps 2, 4 and 5 (fastp defaults, HISAT2 `--dta`,
+  featureCounts `-p --countReadPairs -s 0 -t gene -g ID`), but against a **plant-only** HISAT2
+  index built next to the genome (`references/plant_host/<host>/<host>.*.ht2`): the baselines
+  have no bacterial reads to compete with, and the same NCBI GFF gives the same gene IDs as the
+  gall matrices.
+- Reference choice: Carrizo runs -> sweet orange, like the CC galls (`BASE_REF_carrizo`), so
+  gall and baseline share the hybrid-mapping bias. *Poncirus* runs (PRJDB41296) are listed but
+  skipped until an annotated ZK8 reference exists (`BASE_HOSTS` controls this).
+- Output: `05_baseline/{fastq,trim,align,counts}/` (symlink into 90daydata like the other
+  output dirs) and `04_matrix/baseline_<host>.tsv`, one column per run accession; join
+  tissue/replicate labels from `citrus_baselines.tsv`. `scripts/baselines.slurm` also writes
+  `logs/baseline_summary.tsv` (read pairs, HISAT2 alignment rate, featureCounts assignment).
+- Run: `sbatch scripts/baselines.slurm` (48 cores, 4 runs at a time; `BASE_TIER=2` adds the
+  tier-2 Carrizo leaf controls, `BASE_RUNS=...` a subset). Rerunning resumes: downloads are
+  md5-verified, everything else is make-tracked.
+- Status: submitted 2026-09-15 as job 22046668 (see HANDOFF.md).
+
+### 5d. Candidate shortlist, method 1 (`make shortlist`)
+- CITRUS_HOST_PLAN.md §4 F method 1: host genes ranked by expression in the galls themselves,
+  no baseline. `scripts/shortlist_expression.py` turns the citrus gall counts into TPM (gene
+  lengths from featureCounts), takes each gene's within-gall percentile among protein-coding
+  nuclear genes (organellar contigs NC_008334.1 and NC_037463.1 dropped), and scores a group
+  by the gene's **lowest** percentile across that group's galls, so only genes high in every
+  gall rank; ties break on mean TPM.
+- Groups (plan §4 F): `hamlin` (29wtHC83), `carrizo_wt` (1416wtCC547, 1416wtCC54),
+  `carrizo_eng` (G-19, G-30) and `all`. Outputs: `results/shortlist/method1_expression_<group>_top20.tsv`
+  (in git, with TPM per gall and the genes.tsv annotation columns) and the full 23,436-gene
+  table `04_matrix/citrus_gall_expression.tsv` for merging with methods 2-6.
+  `n_same_ath_hit` = citrus genes sharing the same best Arabidopsis hit, a rough multi-copy warning.
+- Result (2026-09-15): the `all` top 20 is the constitutive-promoter set (ribosomal proteins,
+  polyubiquitin, cyclophilin ROC1, metallothionein MT2A, NDPK1, TCTP) plus stress/wound genes
+  (MLP423-like major allergen at rank 1, LEA5/SAG21, dehydrin ERD14, GRP7, extensin). Hamlin
+  adds aquaporins (PIP1, PIP2, TIP1) and extensins; G-19/G-30 add protease inhibitors, an
+  endochitinase and dormancy-associated DYL1. Which of these are gall-specific needs the
+  baselines (5c).
+- Runs in seconds; from a fresh worktree run the script directly, since the checkout's new
+  script timestamps make `make` want to rebuild the whole gall chain first.
+- **Notebook:** `notebooks/03_citrus_shortlist.ipynb` is the interactive version of the whole
+  non-cluster shortlist work: filters, TPM/percentiles, gall concordance, method 1 with
+  interpretation and figures (`figures/shortlist_*.png`), multi-copy warnings, and guarded
+  cells for methods 3 (percentile shift), 4 (rank products) and 6 (tau) plus a merged table
+  per group (`results/shortlist/merged_<group>.tsv`) that execute once
+  `04_matrix/baseline_citrus_sinensis.tsv` exists. It checks that its method-1 lists match the
+  script's. Execute headless with the viz venv (`notebooks/README.md`).
+
 ### 6. Differential expression
 - Data: split count matrices + sample metadata (strain, genotype, host)
 - Tools: R in conda env `rnaseq`: DESeq2, tximport, edgeR, pheatmap, ggplot2 (not installed yet)

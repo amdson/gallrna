@@ -109,7 +109,7 @@ ACC_solanum_lycopersicum     := GCF_036512215.1
 .PHONY: help all verify qc trim strain-refs host-genomes refs combined align fractions counts matrices mapstats annotate
 
 help:
-	@echo "targets: verify qc trim refs (strain-refs host-genomes) combined align fractions counts matrices mapstats all annotate"
+	@echo "targets: verify qc trim refs (strain-refs host-genomes) combined align fractions counts matrices mapstats all annotate baselines shortlist"
 
 all: verify qc fractions matrices
 
@@ -247,6 +247,86 @@ logs/mapping_stats.tsv: $(foreach s,$(SAMPLES),02_align/$(s).mapstats.tsv)
 	mkdir -p logs
 	awk 'FNR > 1 || NR == 1' $^ > $@
 	@echo "$@: $$(($$(wc -l < $@) - 1)) samples"
+
+# ---------------------------- 5c. public baselines --------------------------
+# Healthy-tissue RNA-seq from ENA (run list: citrus_baselines.tsv, chosen in
+# CITRUS_HOST_PLAN.md section 3.3), put through the same fastp / HISAT2 / featureCounts
+# settings as the galls, but against the plant-only reference: there are no bacterial
+# reads to compete with. Carrizo runs go to the sweet-orange reference, exactly like the
+# CC galls, until the two-parent `carrizo` host exists (plan section 4 A); Poncirus runs
+# wait for an annotated ZK8 reference (plan section 5), so BASE_HOSTS excludes them.
+# Output: 04_matrix/baseline_<host>.tsv, one column per run accession (tissue and
+# replicate labels are in citrus_baselines.tsv). Tier 1 = 27 countable runs, ~105 GB of
+# fastq under 05_baseline/ (symlink it into 90daydata like the other output dirs).
+# Run it as a batch job: sbatch scripts/baselines.slurm
+#   make baselines BASE_TIER=2                          # add the tier-2 Carrizo leaf controls
+#   make baselines BASE_RUNS="SRR32263188 SRR32263215"  # a subset
+BASE_TSV   := citrus_baselines.tsv
+BASE_DIR   := 05_baseline
+BASE_TIER  ?= 1
+BASE_HOSTS ?= citrus_sinensis
+BASE_REF_carrizo := citrus_sinensis
+BASE_MAP   := $(shell awk -F'\t' 'NR > 1 {print $$1 "=" $$3}' $(BASE_TSV))
+basehost   = $(patsubst $1=%,%,$(filter $1=%,$(BASE_MAP)))
+baseref    = $(or $(BASE_REF_$(call basehost,$1)),$(call basehost,$1))
+BASE_RUNS  ?= $(shell awk -F'\t' -v t=$(BASE_TIER) 'NR > 1 && $$7 <= t {print $$1}' $(BASE_TSV))
+BASE_SEL   := $(strip $(foreach r,$(BASE_RUNS),$(if $(filter $(BASE_HOSTS),$(call baseref,$r)),$r)))
+baseruns   = $(foreach r,$(BASE_SEL),$(if $(filter $1,$(call baseref,$r)),$r))
+
+.PHONY: baselines baseline-fetch baseline-trim baseline-align baseline-counts
+baselines:       $(foreach h,$(BASE_HOSTS),04_matrix/baseline_$(h).tsv)
+baseline-fetch:  $(foreach r,$(BASE_SEL),$(BASE_DIR)/fastq/$(r)_1.fastq.gz)
+baseline-trim:   $(foreach r,$(BASE_SEL),$(BASE_DIR)/trim/$(r)_R1.fastq.gz)
+baseline-align:  $(foreach r,$(BASE_SEL),$(BASE_DIR)/align/$(r).bam)
+baseline-counts: $(foreach r,$(BASE_SEL),$(BASE_DIR)/counts/$(r).txt)
+
+$(BASE_DIR)/fastq/%_1.fastq.gz $(BASE_DIR)/fastq/%_2.fastq.gz:
+	scripts/ena_fetch.sh $* $(BASE_DIR)/fastq
+
+$(BASE_DIR)/trim/%_R1.fastq.gz $(BASE_DIR)/trim/%_R2.fastq.gz: $(BASE_DIR)/fastq/%_1.fastq.gz $(BASE_DIR)/fastq/%_2.fastq.gz
+	mkdir -p $(BASE_DIR)/trim
+	$(CONDA)/fastp -w $(THREADS) -i $(BASE_DIR)/fastq/$*_1.fastq.gz -I $(BASE_DIR)/fastq/$*_2.fastq.gz \
+	  -o $(BASE_DIR)/trim/$*_R1.fastq.gz -O $(BASE_DIR)/trim/$*_R2.fastq.gz \
+	  -j $(BASE_DIR)/trim/$*.fastp.json -h $(BASE_DIR)/trim/$*.fastp.html 2> $(BASE_DIR)/trim/$*.fastp.log
+
+# plant-only HISAT2 index next to the genome: references/plant_host/<host>/<host>.*.ht2
+references/plant_host/%.hisat2.ok: references/plant_host/%.fasta
+	module load $(MOD_HISAT2) && hisat2-build -p $(THREADS) $< references/plant_host/$* > references/plant_host/$*.build.log 2>&1
+	touch $@
+
+$(BASE_DIR)/align/%.bam: $(BASE_DIR)/trim/%_R1.fastq.gz $(BASE_DIR)/trim/%_R2.fastq.gz \
+                         references/plant_host/$$(call baseref,$$*)/$$(call baseref,$$*).hisat2.ok
+	mkdir -p $(BASE_DIR)/align
+	module load $(MOD_HISAT2) $(MOD_SAMTOOLS) && \
+	hisat2 -p $(THREADS) --dta -x references/plant_host/$(call baseref,$*)/$(call baseref,$*) \
+	  -1 $(BASE_DIR)/trim/$*_R1.fastq.gz -2 $(BASE_DIR)/trim/$*_R2.fastq.gz 2> $(BASE_DIR)/align/$*.hisat2.log \
+	  | samtools sort -@ $(THREADS) -o $@ - && samtools index $@
+
+$(BASE_DIR)/counts/%.txt: $(BASE_DIR)/align/%.bam
+	mkdir -p $(BASE_DIR)/counts
+	module load $(MOD_SUBREAD) && \
+	featureCounts -p --countReadPairs -T $(THREADS) -s $(STRAND) -t gene -g ID \
+	  -a references/plant_host/$(call baseref,$*)/$(call baseref,$*).gff3 -o $@ $< 2> $(BASE_DIR)/counts/$*.log
+
+04_matrix/baseline_%.tsv: $$(foreach r,$$(call baseruns,$$*),$(BASE_DIR)/counts/$$r.txt)
+	mkdir -p 04_matrix
+	$(CONDA)/python scripts/merge_counts.py $@ drop agro_ $^
+
+# ---------------------------- 5d. candidate shortlist, method 1 -------------
+# CITRUS_HOST_PLAN.md section 4 F, method 1: rank host genes by expression in the galls
+# themselves (TPM -> within-gall percentile; a group's score is the gene's lowest percentile
+# across the group's galls). Needs only the gall counts and genes.tsv, no baseline. Writes
+# the full table to 04_matrix/ and one top-20 per group to results/shortlist/ (in git).
+# Methods 2-6 need the baselines (5c) and are not automated yet.
+SHORTLIST_GROUPS := hamlin=29wtHC83 carrizo_wt=1416wtCC547,1416wtCC54 \
+                    carrizo_eng=1416G-19CC547,1416G-30CC547 \
+                    all=29wtHC83,1416wtCC547,1416wtCC54,1416G-19CC547,1416G-30CC547
+.PHONY: shortlist
+shortlist: results/shortlist/method1_expression_all_top20.tsv
+results/shortlist/method1_expression_all_top20.tsv: 04_matrix/plant_citrus_sinensis.tsv \
+        references/plant_host/citrus_sinensis/citrus_sinensis.genes.tsv scripts/shortlist_expression.py
+	python3 scripts/shortlist_expression.py $< 03_counts/29wtHC83.txt $(word 2,$^) \
+	  04_matrix/citrus_gall_expression.tsv results/shortlist $(SHORTLIST_GROUPS)
 
 # 6. differential expression: not automated yet - needs strandedness + design
 # decisions (see PIPELINE.md step 6). Matrices in 04_matrix/ are DESeq2-ready.
