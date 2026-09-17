@@ -4,8 +4,8 @@
 > Compiled 2026-09-14. DOIs were checked against Crossref / Europe PMC and genome accessions
 > against the NCBI Datasets API on that date; anything not checked is marked **(unverified)**.
 > When a Makefile target, reference or tool changes, amend its entry here.
-> Some files referenced below (SLURM.md, notebooks/, several scripts/) were untracked in the
-> working checkout when this was written.
+> The project's main document is README.md; "README.md §N" and "README.md step N" below point
+> into it (it replaced PIPELINE.md, CITRUS_HOST_PLAN.md, HANDOFF.md and SETUP.md on 2026-09-17).
 
 1. [Method: dual RNA-seq by competitive mapping](#1-method-dual-rna-seq-by-competitive-mapping-to-a-concatenated-reference)
 2. [Agrobacterium in galls](#2-agrobacterium-in-galls)
@@ -106,11 +106,11 @@ Neither compares itself against a combined reference; the three benchmarks above
   gene content and expression response to virulence induction between two *Agrobacterium*
   strains. *Front Microbiol* 10:1554.
   [doi:10.3389/fmicb.2019.01554](https://doi.org/10.3389/fmicb.2019.01554). Template for
-  cross-strain orthology and promoter analysis (PIPELINE.md steps 8-9; HARYONO2019_PIPELINE.md).
+  cross-strain orthology and promoter analysis (README.md §9).
 - Deeken R, Engelmann J, Efetova M, Czirjak T, et al. (2006) An integrated view of gene
   expression and solute profiles of *Arabidopsis* tumors: a genome-wide approach. *Plant Cell*
   18:3617-3634. [doi:10.1105/tpc.106.044743](https://doi.org/10.1105/tpc.106.044743). Host
-  crown-gall expression signature (CITRUS_HOST_PLAN.md §3.4).
+  crown-gall expression signature (README.md §7.4).
 - Gohlke J, Deeken R (2014) Plant responses to *Agrobacterium tumefaciens* and crown gall
   development. *Front Plant Sci* 5:155.
   [doi:10.3389/fpls.2014.00155](https://doi.org/10.3389/fpls.2014.00155). Review.
@@ -133,7 +133,7 @@ Neither compares itself against a combined reference; the three benchmarks above
     poly(A) capture, ribosomal RNA depletion, and DNA microarray for expression profiling.
     *BMC Genomics* 15:419. [doi:10.1186/1471-2164-15-419](https://doi.org/10.1186/1471-2164-15-419).
   - Unstranded: featureCounts `-s 1` vs `-s 2` on a 2.6 M-read slice of 29wtHC83 assigned
-    250,875 vs 249,061 pairs, hence `STRAND=0` (CITRUS_HOST_PLAN.md §1).
+    250,875 vs 249,061 pairs, hence `STRAND=0` (README.md §3).
 
 ## 4. Bacterial references
 
@@ -164,7 +164,7 @@ The "Original Download" .gb files are sequence-only, so the RAST-annotated versi
   [doi:10.1128/MRA.00207-19](https://doi.org/10.1128/MRA.00207-19) (1D159 = ATCC 27912). Its
   relation to strain 29 is **(unverified)**.
 - The 1416 (SnapGene) and 29 (RAST) annotations come from different pipelines. Harmonise them
-  by orthology before comparing genes across strains (PIPELINE.md step 8).
+  by orthology before comparing genes across strains (README.md step 8).
 
 **C58** (comparison and orthology only; no samples map to it): GenBank AE007869 (circular
 chromosome, 2,841,580 bp), AE007870 (linear chromosome, 2,075,577 bp), AE007871 (pTi,
@@ -177,7 +177,7 @@ chromosome, 2,841,580 bp), AE007870 (linear chromosome, 2,075,577 bp), AE007871 
   [doi:10.1126/science.1066803](https://doi.org/10.1126/science.1066803)
 
 Not used by the pipeline: the collaborator's Snippy variant calls and Bakta annotations of
-strain 29 (still on Atlas; SETUP.md). Bakta: Schwengers O, Jelonek L, Dieckmann MA, et al.
+strain 29 (still on Atlas; README.md §14). Bakta: Schwengers O, Jelonek L, Dieckmann MA, et al.
 (2021) *Microb Genom* 7:000685. [doi:10.1099/mgen.0.000685](https://doi.org/10.1099/mgen.0.000685).
 Snippy: <https://github.com/tseemann/snippy>.
 
@@ -213,7 +213,7 @@ fallback choices are in `references/plant_host/AVAILABILITY.md`.
   [doi:10.1093/hr/uhac247](https://doi.org/10.1093/hr/uhac247). This is the DVS assembly; its
   haplotype B is GCA_022201065.1 (DVS_B1.0, Clemson annotation, 27,940 genes). It is RefSeq
   annotated, and all sweet orange cultivars are somatic mutants of one hybrid, so Valencia
-  stands in for Hamlin (CITRUS_HOST_PLAN.md §1.1, §3.1).
+  stands in for Hamlin (README.md §6.2, §7.1).
 - **Carrizo citrange mapped to sweet orange** (Makefile comment on the `HOST_*CC*` lines). No
   Carrizo genome exists. Published Carrizo RNA-seq maps to *C. sinensis* too: Afzal Naveed Z,
   Huguet-Tapia J, Ali G (2019) Transcriptome profile of Carrizo citrange roots in response to
@@ -221,7 +221,7 @@ fallback choices are in `references/plant_host/AVAILABILITY.md`.
   [doi:10.1080/17429145.2019.1609106](https://doi.org/10.1080/17429145.2019.1609106).
   In-house test (2026-09-08): the CC libraries align at 82-85 %, against 92 % for the native
   sweet-orange gall, and assign 92 % as many pairs to genes. Valid for CC-vs-CC contrasts only;
-  a two-parent `carrizo` reference is planned (CITRUS_HOST_PLAN.md §4A).
+  a two-parent `carrizo` reference is planned (README.md §8.2 A).
 - ***Brassica juncea*.** Kang L, Qian L, Zheng M, et al. (2021) Genomic insights into the origin,
   domestication and diversification of *Brassica juncea*. *Nat Genet* 53:1392-1402.
   [doi:10.1038/s41588-021-00922-y](https://doi.org/10.1038/s41588-021-00922-y). A yellow-seeded
@@ -237,7 +237,7 @@ fallback choices are in `references/plant_host/AVAILABILITY.md`.
   PRJNA554539; the paper cited for this assembly on the
   [CGD ZK8 v1.0 page](https://www.citrusgenomedb.org/Analysis/1829479)). It is the only
   *Poncirus* assembly in NCBI. Gene models: CGD `jb2/data/Ptri_ZK8_v1.sorted.gff.gz`, used with
-  CGD's own `Ptri_ZK8_v1.fasta.gz` (URLs in CITRUS_HOST_PLAN.md §3.1). A different assembly,
+  CGD's own `Ptri_ZK8_v1.fasta.gz` (URLs in README.md §7.1). A different assembly,
   the UF/JGI genome, is Peng Z, Bredeson JV, Wu GA, et al. (2020) *Plant J* 104:1215-1232,
   [doi:10.1111/tpj.14993](https://doi.org/10.1111/tpj.14993) (see §12).
 - **Tomato.** Shirasawa K, Ariizumi T (2024) Near-complete genome assembly of tomato (*Solanum
@@ -266,7 +266,7 @@ samtools and subread. Conda versions come from `environment.yml`.
 **Why these settings**
 
 - **HISAT2 rather than STAR:** HISAT2 needs little memory (Kim et al. 2015), which suits large
-  plant hosts on a standard node (PIPELINE.md step 4). Wang et al. 2021 (§1) used HISAT2 with a
+  plant hosts on a standard node (README.md step 4). Wang et al. 2021 (§1) used HISAT2 with a
   concatenated plant + bacterial genome.
 - **`--dta`:** reports alignments tailored for transcript assemblers such as StringTie, and
   requires longer anchors for novel splice sites (HISAT2 manual). Spliced alignment stays on
@@ -282,7 +282,7 @@ samtools and subread. Conda versions come from `environment.yml`.
   from RNA-sequencing data. *Bioinformatics* 25:3207-3212.
   [doi:10.1093/bioinformatics/btp579](https://doi.org/10.1093/bioinformatics/btp579).
   Gene-level counts compared within one host genotype share the bias, so it is not corrected.
-  `make mapstats` records its size per sample (PIPELINE.md step 5b). The remedies below are for
+  `make mapstats` records its size per sample (README.md step 5b). The remedies below are for
   questions about which gene copy is expressed, and aren't used yet:
   - variant-aware index: `hisat2-build --snp` (Kim et al. 2019);
   - remap-and-filter: van de Geijn B, McVicker G, Gilad Y, Pritchard JK (2015) WASP.
@@ -303,14 +303,14 @@ samtools and subread. Conda versions come from `environment.yml`.
     *Brief Bioinform* 21:395-407. [doi:10.1093/bib/bby121](https://doi.org/10.1093/bib/bby121).
 - **featureCounts `-p --countReadPairs -s 0 -t gene -g ID`:** counts fragments rather than reads,
   unstranded (§3), at gene level. Multi-mapping reads are not counted (the featureCounts
-  default); PIPELINE.md step 5 flags that T-DNA genes can be affected.
+  default); README.md step 5 flags that T-DNA genes can be affected.
 - **Gene rows for the bacterial GFF3:** SnapGene and RAST GenBank files carry CDS, tRNA and rRNA
   features but no `gene` features, so `convert_refs.py` writes a `gene` row for each one. A
   feature crossing the origin of a circular replicon is written as one row per part with a
   shared ID, and featureCounts merges rows sharing an ID into one meta-feature (Subread User's
   Guide). This change was uncommitted in the working checkout on 2026-09-14.
 - **Normalise each organism separately** when DE starts: the plant : bacterium ratio varies by
-  sample (PIPELINE.md step 6).
+  sample (README.md step 6).
 
 **Host functional annotation (Makefile step 7, `make annotate`; added 2026-09-15)**
 
@@ -336,6 +336,7 @@ eggnogdb.embl.de, no longer resolves.
 | `scripts/merge_counts.py` | merges per-sample featureCounts tables, keeping or dropping `agro_` rows | `04_matrix/*.tsv` |
 | `scripts/intron_fraction.sh` | re-counts BAMs with `-t exon` vs `-t gene`; intronic = difference in NoFeatures (polyA test, §3) | `logs/intron_fraction.tsv` |
 | `scripts/splice_rates.sh` | share of alignments with `N` in the CIGAR, per organism (`samtools view`, `idxstats`) | `logs/splice_rates.tsv` |
+| `scripts/dotplot.slurm` | whole-genome alignment of two host assemblies, by default Carrizo's parents (*Poncirus* ZK8 vs sweet orange DVS_A1.0), with minimap2 2.24 `-x asm20 -c`: Li H (2018) *Bioinformatics* 34:3094-3100, [doi:10.1093/bioinformatics/bty191](https://doi.org/10.1093/bioinformatics/bty191). Plotted by `notebooks/04_parent_dotplot.ipynb` | `references/plant_host/<query>/<target>__<query>.paf` |
 | `scripts/mapstats.py` (`make mapstats`) | per-sample mapping QC for the paper: fastp retention, HISAT2 rates, primary reads per organism over all reads, host mismatch rate (`samtools stats`), featureCounts assignment | `logs/mapping_stats.tsv` |
 
 ## 8. Notebooks and figures
@@ -377,17 +378,17 @@ Already in `environment.yml`, for later steps:
 |---|---|---|
 | STAR 2.7.11b | alternative aligner | Dobin A, Davis CA, Schlesinger F, et al. (2013) *Bioinformatics* 29:15-21. [doi:10.1093/bioinformatics/bts635](https://doi.org/10.1093/bioinformatics/bts635) |
 | Bowtie 2 2.5.4 | — | Langmead B, Salzberg SL (2012) *Nat Methods* 9:357-359. [doi:10.1038/nmeth.1923](https://doi.org/10.1038/nmeth.1923) |
-| SeqKit 2.10.0 | contig renaming (PIPELINE.md step 3; the Makefile uses convert_refs.py instead) | Shen W, Sipos B, Zhao L (2024) SeqKit2. *iMeta* 3:e191. [doi:10.1002/imt2.191](https://doi.org/10.1002/imt2.191); Shen W, Le S, Li Y, Hu F (2016) *PLoS ONE* 11:e0163962. [doi:10.1371/journal.pone.0163962](https://doi.org/10.1371/journal.pone.0163962) |
+| SeqKit 2.10.0 | contig renaming (README.md step 3; the Makefile uses convert_refs.py instead) | Shen W, Sipos B, Zhao L (2024) SeqKit2. *iMeta* 3:e191. [doi:10.1002/imt2.191](https://doi.org/10.1002/imt2.191); Shen W, Le S, Li Y, Hu F (2016) *PLoS ONE* 11:e0163962. [doi:10.1371/journal.pone.0163962](https://doi.org/10.1371/journal.pone.0163962) |
 | BEDTools | interval work | Quinlan AR, Hall IM (2010) *Bioinformatics* 26:841-842. [doi:10.1093/bioinformatics/btq033](https://doi.org/10.1093/bioinformatics/btq033) |
 | StringTie 3.0.0 | transcript assembly (why `--dta` is set) | Pertea M, Pertea GM, Antonescu CM, et al. (2015) *Nat Biotechnol* 33:290-295. [doi:10.1038/nbt.3122](https://doi.org/10.1038/nbt.3122); Kovaka S, Zimin AV, Pertea GM, et al. (2019) StringTie2. *Genome Biol* 20:278. [doi:10.1186/s13059-019-1910-1](https://doi.org/10.1186/s13059-019-1910-1) |
-| Salmon 1.10.3 | per-parental-copy quantification option (CITRUS_HOST_PLAN.md §4A) | Patro R, Duggal G, Love MI, Irizarry RA, Kingsford C (2017) *Nat Methods* 14:417-419. [doi:10.1038/nmeth.4197](https://doi.org/10.1038/nmeth.4197) |
-| MEME Suite | promoter motifs (PIPELINE.md step 9) | Bailey TL, Johnson J, Grant CE, Noble WS (2015) *Nucleic Acids Res* 43:W39-W49. [doi:10.1093/nar/gkv416](https://doi.org/10.1093/nar/gkv416) |
+| Salmon 1.10.3 | per-parental-copy quantification option (README.md §8.2 A) | Patro R, Duggal G, Love MI, Irizarry RA, Kingsford C (2017) *Nat Methods* 14:417-419. [doi:10.1038/nmeth.4197](https://doi.org/10.1038/nmeth.4197) |
+| MEME Suite | promoter motifs (README.md step 9) | Bailey TL, Johnson J, Grant CE, Noble WS (2015) *Nucleic Acids Res* 43:W39-W49. [doi:10.1093/nar/gkv416](https://doi.org/10.1093/nar/gkv416) |
 | DESeq2 1.50.2 | differential expression (step 6) | Love MI, Huber W, Anders S (2014) *Genome Biol* 15:550. [doi:10.1186/s13059-014-0550-8](https://doi.org/10.1186/s13059-014-0550-8) |
 | tximport 1.38.2 | Salmon → gene counts | Soneson C, Love MI, Robinson MD (2015) *F1000Research* 4:1521. [doi:10.12688/f1000research.7563.2](https://doi.org/10.12688/f1000research.7563.2) |
 | edgeR 4.8.2 | differential expression | Chen Y, Chen L, Lun ATL, Baldoni PL, Smyth GK (2025) edgeR v4. *Nucleic Acids Res* 53:gkaf018. [doi:10.1093/nar/gkaf018](https://doi.org/10.1093/nar/gkaf018); Robinson MD, McCarthy DJ, Smyth GK (2010) *Bioinformatics* 26:139-140. [doi:10.1093/bioinformatics/btp616](https://doi.org/10.1093/bioinformatics/btp616) |
 | pheatmap, ggplot2, lftp | plotting; file transfer | CRAN / <https://lftp.yar.ru> |
 
-Planned in PIPELINE.md and CITRUS_HOST_PLAN.md (links only until adopted):
+Planned in README.md §5 and §8 (links only until adopted):
 
 - OrthoFinder (step 8): Emms DM, Kelly S (2019) *Genome Biol* 20:238.
   [doi:10.1186/s13059-019-1832-y](https://doi.org/10.1186/s13059-019-1832-y)
@@ -399,7 +400,7 @@ Planned in PIPELINE.md and CITRUS_HOST_PLAN.md (links only until adopted):
   [doi:10.1093/bioinformatics/btaa1016](https://doi.org/10.1093/bioinformatics/btaa1016)
 - Citrus Genome Database (ZK8 FASTA/GFF, MCscan anchors `Csin_DVS_A_v1.Ptri_ZK8_v1.anchors.gz`):
   <https://www.citrusgenomedb.org>
-- PlantRegMap / PlantTFDB (`Citrus_sinensis`), PLAZA dicots 5.0: see CITRUS_HOST_PLAN.md §3.2.
+- PlantRegMap / PlantTFDB (`Citrus_sinensis`), PLAZA dicots 5.0: see README.md §7.2.
   Citations to add when used. (eggNOG-mapper and DIAMOND are now in use: §6, step 7.)
 - Public healthy-tissue baselines, run lists in `citrus_baselines.tsv` (downloads from ENA,
   <https://www.ebi.ac.uk/ena/browser/view/ACCESSION>):
@@ -411,7 +412,7 @@ Planned in PIPELINE.md and CITRUS_HOST_PLAN.md (links only until adopted):
   - Sweet orange: [PRJNA599503](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA599503),
     [PRJNA778304](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA778304)
 
-  Study notes and tiers are in CITRUS_HOST_PLAN.md §3.3.
+  Study notes and tiers are in README.md §7.3.
 
 ## 11. Internal and collaborator documents
 
@@ -419,7 +420,7 @@ These are unpublished and gitignored; don't redistribute. Use them as context, n
 citations.
 
 - `docs/050136 Agro resource paper-RT JT-rgs.docx`: resource-paper draft (strain 1416
-  disarming, GAANTRY; CITRUS_HOST_PLAN.md §1.2).
+  disarming, GAANTRY; README.md §6.3).
 - `docs/012226 Shatter Lab Agrobacterim_analysis_pipeline.docx`: collaborator pipeline notes
   (not reviewed for this file).
 - `docs/090326 Agrobacteria Rating Table for Publication.xlsx`, `docs/Agrobacteria Rating Table.xlsx`:
@@ -432,7 +433,7 @@ citations.
 
 ## 12. Discrepancies found while compiling
 
-1. **Wrong *Poncirus* ZK8 citation in CITRUS_HOST_PLAN.md §3.1.** It says to cite Peng et al.
+1. **Wrong *Poncirus* ZK8 citation in the citrus plan (now README.md §7.1).** It says to cite Peng et al.
    2020 for ZK8. That paper (UF / JGI authors) describes a different assembly, probably the
    JGI v1.3.1 genome also listed on CGD. ZK8 (GCA_018350135.1, PRJNA554539, HZAU) is Huang et
    al. 2021 *Hortic Res* ([doi:10.1038/s41438-021-00505-2](https://doi.org/10.1038/s41438-021-00505-2)),
@@ -441,9 +442,10 @@ citations.
    Alabed et al. 2023 say 519,735 bp. The same 519,735 bp figure appears as the AT plasmid of
    1D159 in Huo et al. 2019, which suggests a copy error in the paper. Confirm with the
    collaborators before publishing replicon statistics.
-3. **C58 accessions in PIPELINE.md** list AE007869 / AE007870 / AE007872 and leave out AE007871
-   (the Ti plasmid). references/README.md lists NC_003065 for it.
-4. **DVS_A1.0 gene count:** NCBI reports 23,556 protein-coding genes; CITRUS_HOST_PLAN.md §3.1
+3. **C58 accessions in the old PIPELINE.md** listed AE007869 / AE007870 / AE007872 and left out
+   AE007871 (the Ti plasmid). references/README.md lists NC_003065 for it. **Fixed 2026-09-17:**
+   README.md §3 lists all four.
+4. **DVS_A1.0 gene count:** NCBI reports 23,556 protein-coding genes; the citrus plan (now README.md §7.1)
    said 23,566. **Fixed 2026-09-15.**
 5. **Unknowns to ask the collaborators about:** strain 29's designation and publication; the
    tomato cultivar (T29, T49); the *Euonymus* cultivars (Eu, and golden Geu) against the

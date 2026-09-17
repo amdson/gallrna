@@ -6,7 +6,7 @@ mapping UNCONFIRMED, ask collaborator. Working hypothesis: code prefix = host
 (Eu=Euonymus, Geu=Golden Euonymus, T=Tomato/Tobacco, P=Pepper/Poncirus, HC=Hibiscus,
 CC=Carrizo Citrus?, M=Mustard?).
 Update 2026-09-14: samples.tsv now holds the confirmed hosts. CC = Carrizo citrange
-(C. sinensis x P. trifoliata F1) and HC = Hamlin sweet orange; see CITRUS_HOST_PLAN.md §1.1.
+(C. sinensis x P. trifoliata F1) and HC = Hamlin sweet orange; see README.md §6.2.
 
 ## Chromosome-level assembly available (good to use directly)
 - Helianthus annuus (sunflower), Brassica oleracea, Brassica juncea, Carica papaya,

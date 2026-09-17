@@ -32,7 +32,7 @@ Host per sample: `../samples.tsv`; availability notes: `plant_host/AVAILABILITY.
 | dir | assembly | gene models | samples mapped to it |
 |---|---|---|---|
 | citrus_sinensis | GCF_022201045.2 DVS_A1.0 (RefSeq release 103) | yes | 29wtHC83; the 4 Carrizo (CC) galls for now |
-| poncirus_trifoliata | GCA_018350135.1 ZK8 | not on NCBI (at CGD, see CITRUS_HOST_PLAN.md §3.1) | none |
+| poncirus_trifoliata | GCA_018350135.1 ZK8 | not on NCBI (at CGD, see README.md §7.1) | none |
 | carica_papaya | GCF_000150535.2 Papaya1.0 | yes | 29wtP46 |
 | solanum_lycopersicum | GCF_036512215.1 SLM_r2.1 | yes | 1416wtT49, 29wtT29 |
 | brassica_juncea | GCA_018703725.1 | no | 1416wtM26, 29wtM26 |

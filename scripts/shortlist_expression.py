@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shortlist method 1 (CITRUS_HOST_PLAN.md section 4 F): rank host genes by expression in
+"""Shortlist method 1 (README.md section 8.1): rank host genes by expression in
 the galls, without any baseline.
 
 For every gene: TPM per gall (featureCounts pair counts / gene length), then the gene's

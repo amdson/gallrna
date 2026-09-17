@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One row of per-sample mapping statistics for the paper (see PIPELINE.md step 4, `make mapstats`).
+"""One row of per-sample mapping statistics for the paper (see README.md step 5b, `make mapstats`).
 
 Usage: mapstats.py <sample> <reference> <bam> <hisat2.log> <fastp.json> <featureCounts.txt> [threads]
 
