@@ -39,10 +39,10 @@ mkvar() {
   rm -f "$probe"
 }
 echo "node $(hostname)  cpus $SLURM_CPUS_PER_TASK  mem ${SLURM_MEM_PER_NODE:-?}M  args '$*'"
-echo "runs: $(mkvar BASE_SEL "$@")"
+echo "runs: $(mkvar BASE_RUNS "$@")"
 
 # the index build is one big single-threaded-ish step: give it all the cores
-for h in $(mkvar BASE_HOSTS "$@"); do
+for h in $(mkvar BASE_REF "$@"); do
   phase "index $h" "references/plant_host/$h/$h.hisat2.ok" THREADS="$SLURM_CPUS_PER_TASK"
 done
 phase fetch   baseline-fetch

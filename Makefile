@@ -1,9 +1,10 @@
 # ============================================================================
-# Gall dual RNA-seq pipeline (see PIPELINE.md for rationale)
+# Gall dual RNA-seq pipeline (see README.md section 5 for rationale)
 # Run from this directory. Heavy targets belong on a compute node, e.g.:
 #     srun --cpus-per-task=16 --mem=64G make -j2 align
 # `make help` lists targets. THREADS and STRAND can be overridden: make align THREADS=16
-# HOSTSEL="poncirus_trifoliata citrus_sinensis" (or SAMPLES=...) restricts to a subset of samples.
+# SAMPLES="29wtHC83 1416wtCC547" (or HOSTSEL="citrus_sinensis carica_papaya") restricts a run.
+# Every list below is written out by hand, on purpose: read it top to bottom, edit it in place.
 #
 # ---------------------------- INPUTS ----------------------------------------
 # FILES (must exist locally):
@@ -36,7 +37,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 THREADS ?= 8
-STRAND  ?= 0            # featureCounts -s: 0 until strandedness confirmed; dUTP kits are usually 2
+STRAND  ?= 0            # featureCounts -s: libraries are unstranded (confirmed 2026-09-14, README.md section 3)
 CONDA   ?= $(HOME)/.conda/envs/rnaseq/bin
 # module names as found on SCINet Atlas - override for other clusters (e.g. Ceres):
 #   make align MOD_HISAT2=hisat2 MOD_SAMTOOLS=samtools ...
@@ -48,17 +49,30 @@ MOD_DIAMOND  ?= diamond
 # per-cluster overrides (gitignored), e.g. local.mk on Ceres sets MOD_SAMTOOLS/MOD_SUBREAD
 -include local.mk
 RAW     := 30-1348328766/00_fastq
-ALL_SAMPLES := $(shell tail -n +2 samples.tsv | cut -f1)
 
-# --- sample -> host genome (from samples.tsv / gall tissue inventory) -------
-HOST_1416wtEu635   = euonymus_japonicus_proxy
-HOST_29wtEu635     = euonymus_japonicus_proxy
-HOST_29wtGeu182    = euonymus_japonicus_proxy
-HOST_1416wtGeu182  = euonymus_japonicus_proxy
-HOST_29wtHC83      = citrus_sinensis
-HOST_1416wtM26     = brassica_juncea
-HOST_29wtM26       = brassica_juncea
-HOST_29wtP46       = carica_papaya
+# --- the 14 samples (samples.tsv), by host --------------------------------
+# <strain><genotype><host code><gall age in days>. Order = samples.tsv = matrix column order.
+ALL_SAMPLES := 1416wtEu635 29wtEu635 29wtGeu182 1416wtGeu182 29wtHC83 1416wtM26 29wtM26 29wtP46 \
+               1416wtCC547 1416wtCC54 1416G-19CC547 1416G-30CC547 1416wtT49 29wtT29
+
+SAMPLES_euonymus_japonicus_proxy := 1416wtEu635 29wtEu635 29wtGeu182 1416wtGeu182
+SAMPLES_citrus_sinensis          := 29wtHC83 1416wtCC547 1416wtCC54 1416G-19CC547 1416G-30CC547
+SAMPLES_brassica_juncea          := 1416wtM26 29wtM26
+SAMPLES_carica_papaya            := 29wtP46
+SAMPLES_solanum_lycopersicum     := 1416wtT49 29wtT29
+# poncirus_trifoliata is downloaded for the Carrizo plan (README.md 8.2 A); nothing maps to it yet
+SAMPLES_poncirus_trifoliata      :=
+
+# restrict a run: make align SAMPLES="29wtHC83 1416wtCC547", or by host:
+#   make fractions HOSTSEL="citrus_sinensis carica_papaya"
+HOSTSEL ?=
+ifdef HOSTSEL
+SAMPLES := $(foreach h,$(HOSTSEL),$(SAMPLES_$(h)))
+else
+SAMPLES ?= $(ALL_SAMPLES)
+endif
+
+# --- the combined reference each sample is aligned to: <strain>__<host> ----
 # CC = Carrizo citrange, an F1 hybrid of C. sinensis x P. trifoliata (confirmed
 # 2026-09-14; samples.tsv updated to match). No Carrizo genome exists, so
 # the CC galls are aligned to one parent, C. sinensis, and counted on its gene
@@ -66,8 +80,8 @@ HOST_29wtP46       = carica_papaya
 # 2019, J Plant Interact 14:187-204, doi:10.1080/17429145.2019.1609106 (roots
 # mapped to two C. sinensis genomes; they report only 55-73% transcriptome
 # coverage and fell back to de novo assembly). Here the CC libraries align at
-# 82-85% vs 92% for the native sweet-orange gall 29wtHC83, and a cross-species
-# test (2026-09-08) assigned 92% as many pairs to genes as that native sample.
+# 82-85% vs 92% for the native sweet-orange gall 29wtHC83; the measured cost is
+# about a fifth of the Poncirus-copy reads, a tenth of all reads (README.md 6.2).
 # All four CC galls share the hybrid genotype, so the bias from P. trifoliata
 # alleles mapping with mismatches is common to every CC sample and cancels in
 # CC-vs-CC contrasts; it does not cancel against galls on other hosts.
@@ -77,26 +91,34 @@ HOST_29wtP46       = carica_papaya
 # citrusgenomedb.org/jb2/data/Ptri_ZK8_v1.sorted.gff.gz), but its contigs are
 # named chr1_ZK8.., so pair it with CGD's jb2/data/Ptri_ZK8_v1.fasta.gz, not
 # NCBI's GCA_018350135.1 (CM031384.1..) used now.
-# CITRUS_HOST_PLAN.md (sections 1.1, 3.1, 4A) plans that two-parent `carrizo` host:
+# README.md (sections 6.2, 7.1, 8.2 A) plans that two-parent `carrizo` host:
 # DVS_A1.0 + ZK8 concatenated, counted per parental copy, summed per gene pair.
-HOST_1416wtCC547   = citrus_sinensis
-HOST_1416wtCC54    = citrus_sinensis
-HOST_1416G-19CC547 = citrus_sinensis
-HOST_1416G-30CC547 = citrus_sinensis
-HOST_1416wtT49     = solanum_lycopersicum
-HOST_29wtT29       = solanum_lycopersicum
+COMBO_1416wtEu635   := strain_1416__euonymus_japonicus_proxy
+COMBO_29wtEu635     := strain_29__euonymus_japonicus_proxy
+COMBO_29wtGeu182    := strain_29__euonymus_japonicus_proxy
+COMBO_1416wtGeu182  := strain_1416__euonymus_japonicus_proxy
+COMBO_29wtHC83      := strain_29__citrus_sinensis
+COMBO_1416wtM26     := strain_1416__brassica_juncea
+COMBO_29wtM26       := strain_29__brassica_juncea
+COMBO_29wtP46       := strain_29__carica_papaya
+COMBO_1416wtCC547   := strain_1416__citrus_sinensis
+COMBO_1416wtCC54    := strain_1416__citrus_sinensis
+COMBO_1416G-19CC547 := strain_1416__citrus_sinensis
+COMBO_1416G-30CC547 := strain_1416__citrus_sinensis
+COMBO_1416wtT49     := strain_1416__solanum_lycopersicum
+COMBO_29wtT29       := strain_29__solanum_lycopersicum
 
-strainof = $(if $(filter 1416%,$1),strain_1416,strain_29)
-comboof  = $(call strainof,$1)__$(HOST_$1)
+# the nine strain x host pairs actually sampled (one HISAT2 index each, step 3c)
+COMBOS := strain_1416__euonymus_japonicus_proxy strain_29__euonymus_japonicus_proxy \
+          strain_29__citrus_sinensis           strain_1416__citrus_sinensis \
+          strain_1416__brassica_juncea         strain_29__brassica_juncea \
+          strain_29__carica_papaya \
+          strain_1416__solanum_lycopersicum    strain_29__solanum_lycopersicum
 
+# --- host genomes (NCBI accessions in the header) ---------------------------
 HOSTS       := euonymus_japonicus_proxy citrus_sinensis brassica_juncea carica_papaya poncirus_trifoliata solanum_lycopersicum
+# ANNOT_HOSTS = the hosts with NCBI gene models, hence a plant count matrix and `make annotate`
 ANNOT_HOSTS := citrus_sinensis carica_papaya solanum_lycopersicum
-hostsamples = $(strip $(foreach s,$(ALL_SAMPLES),$(if $(filter $(HOST_$s),$1),$s)))
-# restrict the run to some hosts (or pass SAMPLES=... directly), e.g.
-#   make fractions HOSTSEL="poncirus_trifoliata citrus_sinensis"
-HOSTSEL ?=
-SAMPLES := $(if $(HOSTSEL),$(foreach h,$(HOSTSEL),$(call hostsamples,$h)),$(ALL_SAMPLES))
-COMBOS      := $(sort $(foreach s,$(SAMPLES),$(call comboof,$s)))
 
 ACC_euonymus_japonicus_proxy := GCA_963580455.1
 ACC_citrus_sinensis          := GCF_022201045.2
@@ -181,12 +203,25 @@ references/plant_host/%.fasta:
 # ---------------------------- 3c. combined refs + index ---------------------
 # combo name = <strain>__<host>; agro contigs carry the agro_ prefix, plant
 # contigs keep their NCBI accessions (organism split downstream keys on agro_).
-references/combined/%.fasta: references/agrobacterium/$$(word 1,$$(subst __, ,$$*))/$$(word 1,$$(subst __, ,$$*)).fasta \
-                             references/plant_host/$$(word 2,$$(subst __, ,$$*))/$$(word 2,$$(subst __, ,$$*)).fasta
+# One line per combo names the strain FASTA and the host FASTA that go into it
+# (each GFF3 sits next to its FASTA); the pattern rule below is the shared recipe.
+S1416 := references/agrobacterium/strain_1416/strain_1416.fasta
+S29   := references/agrobacterium/strain_29/strain_29.fasta
+references/combined/strain_1416__euonymus_japonicus_proxy.fasta: $(S1416) references/plant_host/euonymus_japonicus_proxy/euonymus_japonicus_proxy.fasta
+references/combined/strain_29__euonymus_japonicus_proxy.fasta:   $(S29)   references/plant_host/euonymus_japonicus_proxy/euonymus_japonicus_proxy.fasta
+references/combined/strain_29__citrus_sinensis.fasta:            $(S29)   references/plant_host/citrus_sinensis/citrus_sinensis.fasta
+references/combined/strain_1416__citrus_sinensis.fasta:          $(S1416) references/plant_host/citrus_sinensis/citrus_sinensis.fasta
+references/combined/strain_1416__brassica_juncea.fasta:          $(S1416) references/plant_host/brassica_juncea/brassica_juncea.fasta
+references/combined/strain_29__brassica_juncea.fasta:            $(S29)   references/plant_host/brassica_juncea/brassica_juncea.fasta
+references/combined/strain_29__carica_papaya.fasta:              $(S29)   references/plant_host/carica_papaya/carica_papaya.fasta
+references/combined/strain_1416__solanum_lycopersicum.fasta:     $(S1416) references/plant_host/solanum_lycopersicum/solanum_lycopersicum.fasta
+references/combined/strain_29__solanum_lycopersicum.fasta:       $(S29)   references/plant_host/solanum_lycopersicum/solanum_lycopersicum.fasta
+# $< is the strain FASTA, $(word 2,$^) the host FASTA
+references/combined/%.fasta:
 	mkdir -p references/combined
 	cat $^ > $@
-	cat references/agrobacterium/$(word 1,$(subst __, ,$*))/$(word 1,$(subst __, ,$*)).gff3 > references/combined/$*.gff3
-	@hostgff=references/plant_host/$(word 2,$(subst __, ,$*))/$(word 2,$(subst __, ,$*)).gff3; \
+	cat $(<:.fasta=.gff3) > references/combined/$*.gff3
+	@hostgff=$(word 2,$(^:.fasta=.gff3)); \
 	  if [ -f "$$hostgff" ]; then grep -v "^#" "$$hostgff" >> references/combined/$*.gff3; \
 	  else echo "NOTE: no host annotation for $* - combined GFF is agro-only"; fi
 
@@ -195,10 +230,10 @@ references/combined/%.hisat2.ok: references/combined/%.fasta
 	touch $@
 
 # ---------------------------- 4. align (competitive) ------------------------
-02_align/%.bam: 01_trim/%_R1.fastq.gz 01_trim/%_R2.fastq.gz references/combined/$$(call comboof,$$*).hisat2.ok
+02_align/%.bam: 01_trim/%_R1.fastq.gz 01_trim/%_R2.fastq.gz references/combined/$$(COMBO_$$*).hisat2.ok
 	mkdir -p 02_align
 	module load $(MOD_HISAT2) $(MOD_SAMTOOLS) && \
-	hisat2 -p $(THREADS) --dta -x references/combined/$(call comboof,$*) \
+	hisat2 -p $(THREADS) --dta -x references/combined/$(COMBO_$*) \
 	  -1 01_trim/$*_R1.fastq.gz -2 01_trim/$*_R2.fastq.gz 2> 02_align/$*.hisat2.log \
 	  | samtools sort -@ $(THREADS) -o $@ - && samtools index $@
 
@@ -219,13 +254,32 @@ logs/mapping_fractions.tsv: $(foreach s,$(SAMPLES),02_align/$(s).idxstats)
 	mkdir -p 03_counts
 	module load $(MOD_SUBREAD) && \
 	featureCounts -p --countReadPairs -T $(THREADS) -s $(STRAND) -t gene -g ID \
-	  -a references/combined/$(call comboof,$*).gff3 -o $@ $< 2> 03_counts/$*.log
+	  -a references/combined/$(COMBO_$*).gff3 -o $@ $< 2> 03_counts/$*.log
 
-04_matrix/agro_%.tsv: $$(foreach s,$$(SAMPLES),$$(if $$(filter $$(call strainof,$$s),$$*),03_counts/$$s.txt))
+# One matrix per strain (its bacterial genes, all its samples) and one per annotated host
+# (plant genes, all samples on that host); columns in this order. A matrix always takes
+# every sample, whatever SAMPLES says: a partial matrix would silently replace a full one.
+04_matrix/agro_strain_1416.tsv: 03_counts/1416wtEu635.txt 03_counts/1416wtGeu182.txt 03_counts/1416wtM26.txt \
+                                03_counts/1416wtCC547.txt 03_counts/1416wtCC54.txt 03_counts/1416G-19CC547.txt \
+                                03_counts/1416G-30CC547.txt 03_counts/1416wtT49.txt
 	mkdir -p 04_matrix
 	$(CONDA)/python scripts/merge_counts.py $@ keep agro_ $^
 
-04_matrix/plant_%.tsv: $$(foreach s,$$(call hostsamples,$$*),03_counts/$$s.txt)
+04_matrix/agro_strain_29.tsv: 03_counts/29wtEu635.txt 03_counts/29wtGeu182.txt 03_counts/29wtHC83.txt \
+                              03_counts/29wtM26.txt 03_counts/29wtP46.txt 03_counts/29wtT29.txt
+	mkdir -p 04_matrix
+	$(CONDA)/python scripts/merge_counts.py $@ keep agro_ $^
+
+04_matrix/plant_citrus_sinensis.tsv: 03_counts/29wtHC83.txt 03_counts/1416wtCC547.txt 03_counts/1416wtCC54.txt \
+                                     03_counts/1416G-19CC547.txt 03_counts/1416G-30CC547.txt
+	mkdir -p 04_matrix
+	$(CONDA)/python scripts/merge_counts.py $@ drop agro_ $^
+
+04_matrix/plant_carica_papaya.tsv: 03_counts/29wtP46.txt
+	mkdir -p 04_matrix
+	$(CONDA)/python scripts/merge_counts.py $@ drop agro_ $^
+
+04_matrix/plant_solanum_lycopersicum.tsv: 03_counts/1416wtT49.txt 03_counts/29wtT29.txt
 	mkdir -p 04_matrix
 	$(CONDA)/python scripts/merge_counts.py $@ drop agro_ $^
 
@@ -235,11 +289,11 @@ logs/mapping_fractions.tsv: $(foreach s,$(SAMPLES),02_align/$(s).idxstats)
 # sequenced), host mismatch rate and featureCounts assignment. It records that the
 # single-copy host references gave reasonable results even though the hosts are
 # heterozygous, hybrid or polyploid, and it bounds plant->bacterium cross-mapping.
-# Column guide and how to read it: PIPELINE.md step 5b. samtools stats reads every host
+# Column guide and how to read it: README.md step 5b. samtools stats reads every host
 # alignment, so run it on a compute node, e.g.
 #   srun --cpus-per-task=16 --mem=16G make -j4 mapstats THREADS=4
 02_align/%.mapstats.tsv: 02_align/%.bam 03_counts/%.txt scripts/mapstats.py
-	module load $(MOD_SAMTOOLS) && python3 scripts/mapstats.py $* $(call comboof,$*) $< \
+	module load $(MOD_SAMTOOLS) && python3 scripts/mapstats.py $* $(COMBO_$*) $< \
 	  02_align/$*.hisat2.log 01_trim/$*.fastp.json 03_counts/$*.txt $(THREADS) > $@.tmp
 	mv $@.tmp $@
 
@@ -250,35 +304,51 @@ logs/mapping_stats.tsv: $(foreach s,$(SAMPLES),02_align/$(s).mapstats.tsv)
 
 # ---------------------------- 5c. public baselines --------------------------
 # Healthy-tissue RNA-seq from ENA (run list: citrus_baselines.tsv, chosen in
-# CITRUS_HOST_PLAN.md section 3.3), put through the same fastp / HISAT2 / featureCounts
+# README.md section 7.3), put through the same fastp / HISAT2 / featureCounts
 # settings as the galls, but against the plant-only reference: there are no bacterial
 # reads to compete with. Carrizo runs go to the sweet-orange reference, exactly like the
-# CC galls, until the two-parent `carrizo` host exists (plan section 4 A); Poncirus runs
-# wait for an annotated ZK8 reference (plan section 5), so BASE_HOSTS excludes them.
-# Output: 04_matrix/baseline_<host>.tsv, one column per run accession (tissue and
-# replicate labels are in citrus_baselines.tsv). Tier 1 = 27 countable runs, ~105 GB of
-# fastq under 05_baseline/ (symlink it into 90daydata like the other output dirs).
+# CC galls, until the two-parent `carrizo` host exists (README.md section 8.2 A). The Poncirus
+# runs are listed but in no tier's run list until ZK8 has an annotated reference.
+# Output: 04_matrix/baseline_citrus_sinensis.tsv, one column per run accession in the order
+# below (tissue and replicate labels are in citrus_baselines.tsv). Tier 1 = 27 runs, ~250 GB
+# under 05_baseline/ (symlink it into 90daydata like the other output dirs).
 # Run it as a batch job: sbatch scripts/baselines.slurm
 #   make baselines BASE_TIER=2                          # add the tier-2 Carrizo leaf controls
 #   make baselines BASE_RUNS="SRR32263188 SRR32263215"  # a subset
-BASE_TSV   := citrus_baselines.tsv
-BASE_DIR   := 05_baseline
+BASE_DIR := 05_baseline
+# every run below is aligned to sweet orange, the Carrizo ones exactly like the CC galls
+BASE_REF := citrus_sinensis
+
+# tier 1: sweet orange, PRJNA599503 (healthy bark CK_P1-3, root CK_R1-3, young leaf CK_L1-3)
+BASE_SO_BARK   := SRR10848795 SRR10848794 SRR10848793
+BASE_SO_ROOT   := SRR10848792 SRR10848791 SRR10848790
+BASE_SO_LEAF   := SRR10848806 SRR10848805 SRR10848796
+# tier 1: Valencia embryogenic callus, empty-vector line EV-L44 at 0, 15 and 30 d, PRJNA778304
+BASE_SO_CALLUS := SRR16874257 SRR16874256 SRR16874247 SRR16874246 SRR16874245 SRR16874244 SRR16874243 SRR16874242 SRR16874241
+# tier 1: Carrizo citrange wt, PRJNA1216034 (18 d stems, young leaves, untreated mature leaves)
+BASE_CC_STEM   := SRR32263188 SRR32263215 SRR32263214
+BASE_CC_YLEAF  := SRR32263194 SRR32263193 SRR32263192
+BASE_CC_MLEAF  := SRR32263197 SRR32263196 SRR32263195
+# tier 2: Carrizo leaf controls, PRJNA839431 (CT-Car), PRJNA668159 (Carrizo Control), PRJNA1053671 (ZC-1..3)
+BASE_CC_LEAF2  := SRR19277106 SRR19277105 SRR19277104 SRR12799421 SRR12799422 SRR12799423 SRR27236378 SRR27236377 SRR27236376
+# tier 1 but not run: Poncirus ZK stem and thorn, PRJDB41296 - needs an annotated ZK8 reference (README.md 8.2 A)
+BASE_PT_STEM   := DRR1031157 DRR1031158 DRR1031159
+BASE_PT_THORN  := DRR1031160 DRR1031161 DRR1031162
+
+BASE_TIER1 := $(BASE_SO_BARK) $(BASE_SO_ROOT) $(BASE_SO_LEAF) $(BASE_SO_CALLUS) $(BASE_CC_STEM) $(BASE_CC_YLEAF) $(BASE_CC_MLEAF)
 BASE_TIER  ?= 1
-BASE_HOSTS ?= citrus_sinensis
-BASE_REF_carrizo := citrus_sinensis
-BASE_MAP   := $(shell awk -F'\t' 'NR > 1 {print $$1 "=" $$3}' $(BASE_TSV))
-basehost   = $(patsubst $1=%,%,$(filter $1=%,$(BASE_MAP)))
-baseref    = $(or $(BASE_REF_$(call basehost,$1)),$(call basehost,$1))
-BASE_RUNS  ?= $(shell awk -F'\t' -v t=$(BASE_TIER) 'NR > 1 && $$7 <= t {print $$1}' $(BASE_TSV))
-BASE_SEL   := $(strip $(foreach r,$(BASE_RUNS),$(if $(filter $(BASE_HOSTS),$(call baseref,$r)),$r)))
-baseruns   = $(foreach r,$(BASE_SEL),$(if $(filter $1,$(call baseref,$r)),$r))
+ifeq ($(BASE_TIER),2)
+BASE_RUNS  ?= $(BASE_TIER1) $(BASE_CC_LEAF2)
+else
+BASE_RUNS  ?= $(BASE_TIER1)
+endif
 
 .PHONY: baselines baseline-fetch baseline-trim baseline-align baseline-counts
-baselines:       $(foreach h,$(BASE_HOSTS),04_matrix/baseline_$(h).tsv)
-baseline-fetch:  $(foreach r,$(BASE_SEL),$(BASE_DIR)/fastq/$(r)_1.fastq.gz)
-baseline-trim:   $(foreach r,$(BASE_SEL),$(BASE_DIR)/trim/$(r)_R1.fastq.gz)
-baseline-align:  $(foreach r,$(BASE_SEL),$(BASE_DIR)/align/$(r).bam)
-baseline-counts: $(foreach r,$(BASE_SEL),$(BASE_DIR)/counts/$(r).txt)
+baselines:       04_matrix/baseline_$(BASE_REF).tsv
+baseline-fetch:  $(foreach r,$(BASE_RUNS),$(BASE_DIR)/fastq/$(r)_1.fastq.gz)
+baseline-trim:   $(foreach r,$(BASE_RUNS),$(BASE_DIR)/trim/$(r)_R1.fastq.gz)
+baseline-align:  $(foreach r,$(BASE_RUNS),$(BASE_DIR)/align/$(r).bam)
+baseline-counts: $(foreach r,$(BASE_RUNS),$(BASE_DIR)/counts/$(r).txt)
 
 $(BASE_DIR)/fastq/%_1.fastq.gz $(BASE_DIR)/fastq/%_2.fastq.gz:
 	scripts/ena_fetch.sh $* $(BASE_DIR)/fastq
@@ -295,10 +365,10 @@ references/plant_host/%.hisat2.ok: references/plant_host/%.fasta
 	touch $@
 
 $(BASE_DIR)/align/%.bam: $(BASE_DIR)/trim/%_R1.fastq.gz $(BASE_DIR)/trim/%_R2.fastq.gz \
-                         references/plant_host/$$(call baseref,$$*)/$$(call baseref,$$*).hisat2.ok
+                         references/plant_host/$(BASE_REF)/$(BASE_REF).hisat2.ok
 	mkdir -p $(BASE_DIR)/align
 	module load $(MOD_HISAT2) $(MOD_SAMTOOLS) && \
-	hisat2 -p $(THREADS) --dta -x references/plant_host/$(call baseref,$*)/$(call baseref,$*) \
+	hisat2 -p $(THREADS) --dta -x references/plant_host/$(BASE_REF)/$(BASE_REF) \
 	  -1 $(BASE_DIR)/trim/$*_R1.fastq.gz -2 $(BASE_DIR)/trim/$*_R2.fastq.gz 2> $(BASE_DIR)/align/$*.hisat2.log \
 	  | samtools sort -@ $(THREADS) -o $@ - && samtools index $@
 
@@ -306,14 +376,14 @@ $(BASE_DIR)/counts/%.txt: $(BASE_DIR)/align/%.bam
 	mkdir -p $(BASE_DIR)/counts
 	module load $(MOD_SUBREAD) && \
 	featureCounts -p --countReadPairs -T $(THREADS) -s $(STRAND) -t gene -g ID \
-	  -a references/plant_host/$(call baseref,$*)/$(call baseref,$*).gff3 -o $@ $< 2> $(BASE_DIR)/counts/$*.log
+	  -a references/plant_host/$(BASE_REF)/$(BASE_REF).gff3 -o $@ $< 2> $(BASE_DIR)/counts/$*.log
 
-04_matrix/baseline_%.tsv: $$(foreach r,$$(call baseruns,$$*),$(BASE_DIR)/counts/$$r.txt)
+04_matrix/baseline_$(BASE_REF).tsv: $(foreach r,$(BASE_RUNS),$(BASE_DIR)/counts/$(r).txt)
 	mkdir -p 04_matrix
 	$(CONDA)/python scripts/merge_counts.py $@ drop agro_ $^
 
 # ---------------------------- 5d. candidate shortlist, method 1 -------------
-# CITRUS_HOST_PLAN.md section 4 F, method 1: rank host genes by expression in the galls
+# README.md section 8.1, method 1: rank host genes by expression in the galls
 # themselves (TPM -> within-gall percentile; a group's score is the gene's lowest percentile
 # across the group's galls). Needs only the gall counts and genes.tsv, no baseline. Writes
 # the full table to 04_matrix/ and one top-20 per group to results/shortlist/ (in git).
@@ -329,12 +399,12 @@ results/shortlist/method1_expression_all_top20.tsv: 04_matrix/plant_citrus_sinen
 	  04_matrix/citrus_gall_expression.tsv results/shortlist $(SHORTLIST_GROUPS)
 
 # 6. differential expression: not automated yet - needs strandedness + design
-# decisions (see PIPELINE.md step 6). Matrices in 04_matrix/ are DESeq2-ready.
+# decisions (see README.md step 6). Matrices in 04_matrix/ are DESeq2-ready.
 
 # ---------------------------- 7. functional annotation ----------------------
 # One protein per gene (longest RefSeq isoform, named by the gene ID featureCounts
 # writes) -> eggNOG-mapper (GO, KEGG, EC, Pfam, description) + DIAMOND best hit in
-# Arabidopsis (AGI + symbol; the crown-gall marker lists in CITRUS_HOST_PLAN.md are
+# Arabidopsis (AGI + symbol; the crown-gall marker lists in README.md section 7.4 are
 # AGIs). Output: references/plant_host/<host>/<host>.genes.tsv, one row per counted
 # gene, so it joins straight onto 04_matrix/plant_<host>.tsv.
 # Needs scripts/emapper-env.sh once. The eggNOG database (~50 GB) downloads on first
